@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 224 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 30% 12%;
+    --primary: 161 84% 24%;
+    --primary-foreground: 160 60% 98%;
+    --secondary: 220 16% 96%;
+    --secondary-foreground: 224 25% 18%;
+    --muted: 220 16% 96%;
+    --muted-foreground: 224 12% 46%;
+    --accent: 161 60% 95%;
+    --accent-foreground: 161 84% 18%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 14% 90%;
+    --input: 220 14% 88%;
+    --ring: 161 84% 30%;
+    --radius: 0.625rem;
+    --chart-1: 161 84% 32%;
+    --chart-2: 199 89% 48%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 262 70% 58%;
+    --chart-5: 340 75% 55%;
+    --sidebar: 224 35% 9%;
+    --sidebar-foreground: 220 15% 74%;
+    --sidebar-accent: 224 28% 16%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 224 25% 16%;
+  }
+
+  .dark {
+    --background: 224 35% 7%;
+    --foreground: 220 15% 92%;
+    --card: 224 32% 10%;
+    --card-foreground: 220 15% 92%;
+    --popover: 224 32% 10%;
+    --popover-foreground: 220 15% 92%;
+    --primary: 160 70% 42%;
+    --primary-foreground: 161 90% 8%;
+    --secondary: 224 26% 15%;
+    --secondary-foreground: 220 15% 88%;
+    --muted: 224 26% 15%;
+    --muted-foreground: 222 12% 60%;
+    --accent: 161 50% 16%;
+    --accent-foreground: 160 60% 88%;
+    --destructive: 0 62% 46%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 224 24% 17%;
+    --input: 224 24% 20%;
+    --ring: 160 70% 42%;
+    --sidebar: 224 38% 6%;
+    --sidebar-foreground: 220 14% 68%;
+    --sidebar-accent: 224 30% 13%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 224 26% 13%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted-foreground/30;
+  }
+}

@@ -2,6 +2,8 @@
 
 A production-grade SaaS platform for multi-location restaurants: reservations, branches, menus, customers, staff, and analytics — with strict multi-tenant data isolation.
 
+Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates and times follow Bangladesh time (`Asia/Dhaka`), and addresses use divisions and postal codes. These defaults live in `src/lib/constants.ts`.
+
 ![Stack](https://img.shields.io/badge/Next.js%2015-App%20Router-black) ![DB](https://img.shields.io/badge/MongoDB-Mongoose-47A248) ![Auth](https://img.shields.io/badge/Auth.js-v5-purple)
 
 ## Features

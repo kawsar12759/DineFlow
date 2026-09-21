@@ -160,7 +160,10 @@ export default function BranchesPage() {
                     <TableCell>
                       <span className="flex items-center gap-1.5 text-muted-foreground">
                         <MapPin className="h-3.5 w-3.5" />
-                        {branch.address.city}, {branch.address.country}
+                        {branch.address.city}
+                        {branch.address.state &&
+                          branch.address.state !== branch.address.city &&
+                          `, ${branch.address.state}`}
                       </span>
                     </TableCell>
                     <TableCell>

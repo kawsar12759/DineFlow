@@ -37,7 +37,7 @@ const BranchSchema = new Schema<IBranch>(
       city: { type: String, required: true, trim: true },
       state: { type: String, trim: true },
       zip: { type: String, trim: true },
-      country: { type: String, required: true, trim: true, default: "USA" },
+      country: { type: String, required: true, trim: true, default: "Bangladesh" },
     },
     capacity: { type: Number, required: true, min: 1 },
     contactInfo: {

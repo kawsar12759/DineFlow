@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FadeUp, Stagger, StaggerItem } from "@/components/marketing/animated";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+import { PLAN_MONTHLY_PRICE } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 const plans = [
   {
     name: "Starter",
-    price: "$49",
+    price: formatCurrency(PLAN_MONTHLY_PRICE.starter!),
     period: "/month",
     description: "For single-location restaurants getting organized.",
     highlighted: false,
@@ -32,7 +33,7 @@ const plans = [
   },
   {
     name: "Growth",
-    price: "$149",
+    price: formatCurrency(PLAN_MONTHLY_PRICE.growth!),
     period: "/month",
     description: "For growing groups that need full visibility.",
     highlighted: true,

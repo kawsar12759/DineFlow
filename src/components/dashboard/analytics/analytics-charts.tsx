@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { formatCompactCurrency, formatCurrency } from "@/lib/utils";
 
 const CHART_COLORS = [
   "hsl(161 84% 32%)",
@@ -57,7 +57,7 @@ export function BranchRevenueChart({ data }: { data: BranchPerformance[] }) {
           tick={{ fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${Number(value) / 1000}k`}
+          tickFormatter={(value) => formatCompactCurrency(Number(value))}
         />
         <YAxis
           type="category"

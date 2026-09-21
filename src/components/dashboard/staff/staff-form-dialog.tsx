@@ -157,7 +157,7 @@ export function StaffFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="name">Full name</Label>
-              <Input id="name" placeholder="Alex Johnson" {...form.register("name")} />
+              <Input id="name" placeholder="Rahim Uddin" {...form.register("name")} />
               {form.formState.errors.name && (
                 <p className="text-xs text-destructive">
                   {form.formState.errors.name.message}
@@ -169,7 +169,7 @@ export function StaffFormDialog({
               <Input
                 id="email"
                 type="email"
-                placeholder="alex@restaurant.com"
+                placeholder="rahim@restaurant.com"
                 disabled={isEditing}
                 {...form.register("email")}
               />
@@ -267,7 +267,7 @@ export function StaffFormDialog({
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                placeholder="+1 555 000 1234"
+                placeholder="+880 1712-345678"
                 {...form.register("phone")}
               />
             </div>

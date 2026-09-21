@@ -181,7 +181,7 @@ export function ReservationFormDialog({
               <Label htmlFor="customerName">Customer name</Label>
               <Input
                 id="customerName"
-                placeholder="Jane Smith"
+                placeholder="Nusrat Jahan"
                 {...form.register("customerName")}
               />
               {form.formState.errors.customerName && (
@@ -195,7 +195,7 @@ export function ReservationFormDialog({
               <Input
                 id="customerEmail"
                 type="email"
-                placeholder="jane@example.com"
+                placeholder="nusrat@example.com"
                 {...form.register("customerEmail")}
               />
               {form.formState.errors.customerEmail && (
@@ -211,12 +211,12 @@ export function ReservationFormDialog({
               <Label htmlFor="customerPhone">Phone (optional)</Label>
               <Input
                 id="customerPhone"
-                placeholder="+1 555 000 1234"
+                placeholder="+880 1712-345678"
                 {...form.register("customerPhone")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="estimatedSpend">Estimated spend (USD)</Label>
+              <Label htmlFor="estimatedSpend">Estimated spend (৳)</Label>
               <Input
                 id="estimatedSpend"
                 type="number"

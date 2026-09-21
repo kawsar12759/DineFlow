@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCompactNumber, formatCurrency } from "@/lib/utils";
+import { formatCompactCurrency, formatCurrency, formatDayKey } from "@/lib/utils";
 
 export interface TrendPoint {
   date: string;
@@ -26,8 +26,7 @@ export interface TrendPoint {
 }
 
 function formatAxisDate(value: string) {
-  const date = new Date(value);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return formatDayKey(value);
 }
 
 const tooltipStyle = {
@@ -104,7 +103,7 @@ export function RevenueTrendChart({ data }: { data: TrendPoint[] }) {
           tick={{ fontSize: 11 }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${formatCompactNumber(Number(value))}`}
+          tickFormatter={(value) => formatCompactCurrency(Number(value))}
         />
         <Tooltip
           contentStyle={tooltipStyle}

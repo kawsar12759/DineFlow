@@ -18,6 +18,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { BD_DIVISIONS, COUNTRY, PHONE_PLACEHOLDER } from "@/lib/constants";
 
 const formSchema = z.object({
   name: z.string().min(2, "Branch name is required"),
@@ -25,7 +33,6 @@ const formSchema = z.object({
   city: z.string().min(2, "City is required"),
   state: z.string().optional(),
   zip: z.string().optional(),
-  country: z.string().min(2, "Country is required"),
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
   phone: z.string().optional(),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -67,7 +74,7 @@ export function BranchFormDialog({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { country: "USA" },
+    defaultValues: { capacity: 40 },
   });
 
   useEffect(() => {
@@ -80,13 +87,12 @@ export function BranchFormDialog({
               city: branch.address.city,
               state: branch.address.state ?? "",
               zip: branch.address.zip ?? "",
-              country: branch.address.country,
               capacity: branch.capacity,
               phone: branch.contactInfo?.phone ?? "",
               email: branch.contactInfo?.email ?? "",
               openingHours: branch.openingHours ?? "",
             }
-          : { country: "USA", capacity: 40 }
+          : { capacity: 40 }
       );
     }
   }, [open, branch, form]);
@@ -100,7 +106,7 @@ export function BranchFormDialog({
           city: values.city,
           state: values.state || undefined,
           zip: values.zip || undefined,
-          country: values.country,
+          country: COUNTRY,
         },
         capacity: values.capacity,
         contactInfo: {
@@ -171,7 +177,7 @@ export function BranchFormDialog({
             <Label htmlFor="street">Street address</Label>
             <Input
               id="street"
-              placeholder="123 Main Street"
+              placeholder="House 42, Road 11, Banani"
               {...form.register("street")}
             />
             {form.formState.errors.street && (
@@ -184,7 +190,7 @@ export function BranchFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="city">City</Label>
-              <Input id="city" placeholder="San Francisco" {...form.register("city")} />
+              <Input id="city" placeholder="Dhaka" {...form.register("city")} />
               {form.formState.errors.city && (
                 <p className="text-xs text-destructive">
                   {form.formState.errors.city.message}
@@ -192,25 +198,30 @@ export function BranchFormDialog({
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="state">State / Province</Label>
-              <Input id="state" placeholder="CA" {...form.register("state")} />
+              <Label htmlFor="state">Division</Label>
+              <Select
+                value={form.watch("state") || undefined}
+                onValueChange={(value) =>
+                  form.setValue("state", value, { shouldDirty: true })
+                }
+              >
+                <SelectTrigger id="state">
+                  <SelectValue placeholder="Select division" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BD_DIVISIONS.map((division) => (
+                    <SelectItem key={division} value={division}>
+                      {division}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="zip">ZIP / Postal code</Label>
-              <Input id="zip" placeholder="94105" {...form.register("zip")} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="country">Country</Label>
-              <Input id="country" {...form.register("country")} />
-              {form.formState.errors.country && (
-                <p className="text-xs text-destructive">
-                  {form.formState.errors.country.message}
-                </p>
-              )}
-            </div>
+          <div className="space-y-1.5 sm:w-1/2 sm:pr-2">
+            <Label htmlFor="zip">Postal code</Label>
+            <Input id="zip" placeholder="1213" {...form.register("zip")} />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -218,7 +229,7 @@ export function BranchFormDialog({
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                placeholder="+1 555 000 1234"
+                placeholder={PHONE_PLACEHOLDER}
                 {...form.register("phone")}
               />
             </div>
@@ -242,7 +253,7 @@ export function BranchFormDialog({
             <Label htmlFor="openingHours">Opening hours</Label>
             <Input
               id="openingHours"
-              placeholder="Mon–Sun 11:00–23:00"
+              placeholder="Sat–Thu 12:00–23:00"
               {...form.register("openingHours")}
             />
           </div>

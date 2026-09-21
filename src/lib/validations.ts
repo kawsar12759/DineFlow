@@ -34,7 +34,7 @@ export const branchSchema = z.object({
     city: z.string().min(2, "City is required"),
     state: z.string().optional(),
     zip: z.string().optional(),
-    country: z.string().min(2, "Country is required").default("USA"),
+    country: z.string().min(2, "Country is required").default("Bangladesh"),
   }),
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
   contactInfo: z

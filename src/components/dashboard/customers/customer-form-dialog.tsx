@@ -126,7 +126,7 @@ export function CustomerFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="Jane Smith" {...form.register("name")} />
+              <Input id="name" placeholder="Nusrat Jahan" {...form.register("name")} />
               {form.formState.errors.name && (
                 <p className="text-xs text-destructive">
                   {form.formState.errors.name.message}
@@ -138,7 +138,7 @@ export function CustomerFormDialog({
               <Input
                 id="email"
                 type="email"
-                placeholder="jane@example.com"
+                placeholder="nusrat@example.com"
                 {...form.register("email")}
               />
               {form.formState.errors.email && (
@@ -154,7 +154,7 @@ export function CustomerFormDialog({
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                placeholder="+1 555 000 1234"
+                placeholder="+880 1712-345678"
                 {...form.register("phone")}
               />
             </div>

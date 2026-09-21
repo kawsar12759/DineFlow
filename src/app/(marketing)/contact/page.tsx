@@ -23,12 +23,12 @@ const contactDetails = [
   {
     icon: Phone,
     label: "Phone",
-    value: "+1 (555) 010-3456",
+    value: "+880 1712-345678",
   },
   {
     icon: MapPin,
     label: "Headquarters",
-    value: "548 Market St, San Francisco, CA",
+    value: "House 42, Road 11, Banani, Dhaka 1213",
   },
 ];
 

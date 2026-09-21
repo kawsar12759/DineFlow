@@ -80,6 +80,13 @@ export const SUBSCRIPTION_PLANS = ["starter", "growth", "enterprise"] as const;
 
 export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
 
+/** Monthly subscription price in BDT; null means custom (sales-led). */
+export const PLAN_MONTHLY_PRICE: Record<SubscriptionPlan, number | null> = {
+  starter: 2999,
+  growth: 7999,
+  enterprise: null,
+};
+
 export const ANALYTICS_EVENT_TYPES = [
   "reservation_created",
   "reservation_status_changed",
@@ -96,4 +103,24 @@ export type AnalyticsEventType = (typeof ANALYTICS_EVENT_TYPES)[number];
 export const STAFF_SHIFTS = ["morning", "afternoon", "evening", "night"] as const;
 
 export const APP_NAME = "DineFlow";
+
+// DineFlow serves restaurants in Bangladesh only — money, dates and
+// addresses are localised app-wide from these constants.
+export const COUNTRY = "Bangladesh";
+export const CURRENCY = "BDT";
+export const CURRENCY_SYMBOL = "৳";
+export const TIMEZONE = "Asia/Dhaka";
+export const LOCALE = "en-GB";
+export const PHONE_PLACEHOLDER = "+880 1712-345678";
+
+export const BD_DIVISIONS = [
+  "Barishal",
+  "Chattogram",
+  "Dhaka",
+  "Khulna",
+  "Mymensingh",
+  "Rajshahi",
+  "Rangpur",
+  "Sylhet",
+] as const;
 export const PAGE_SIZE = 10;

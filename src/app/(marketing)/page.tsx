@@ -138,7 +138,7 @@ export default function HomePage() {
                   {[
                     { label: "Today's reservations", value: "47", icon: CalendarCheck },
                     { label: "Occupancy", value: "82%", icon: LayoutDashboard },
-                    { label: "Revenue (MTD)", value: "$128k", icon: BarChart3 },
+                    { label: "Revenue (MTD)", value: "৳12.8L", icon: BarChart3 },
                     { label: "Active guests", value: "1,940", icon: Users },
                   ].map((stat) => (
                     <div

@@ -232,7 +232,7 @@ function ReserveForm() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="phone">Phone (optional)</Label>
-              <Input id="phone" placeholder="+1 555 000 1234" {...form.register("phone")} />
+              <Input id="phone" placeholder="+880 1712-345678" {...form.register("phone")} />
             </div>
           </div>
 

@@ -26,7 +26,7 @@ export default function AuthLayout({
             no-shows are down.”
           </p>
           <footer className="text-sm text-sidebar-foreground">
-            Amelia Rhodes — Owner, Ember &amp; Oak
+            Farhana Rahman — Owner, Ember &amp; Oak
           </footer>
         </blockquote>
       </div>

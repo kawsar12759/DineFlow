@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -15,6 +15,12 @@ import { Label } from "@/components/ui/label";
 export default function LoginPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [inactiveNotice, setInactiveNotice] = useState(false);
+
+  useEffect(() => {
+    const reason = new URLSearchParams(window.location.search).get("reason");
+    setInactiveNotice(reason === "inactive");
+  }, []);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -30,7 +36,11 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        toast.error("Invalid email or password");
+        toast.error(
+          result.code === "rate_limited"
+            ? "Too many sign-in attempts. Please wait 15 minutes and try again."
+            : "Invalid email or password"
+        );
         return;
       }
 
@@ -48,6 +58,16 @@ export default function LoginPage() {
       <p className="mt-2 text-sm text-muted-foreground">
         Sign in to your DineFlow dashboard.
       </p>
+
+      {inactiveNotice && (
+        <p
+          role="alert"
+          className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+        >
+          Your account has been deactivated or changed. Ask your restaurant
+          owner or manager to restore access.
+        </p>
+      )}
 
       <form className="mt-8 space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="space-y-1.5">

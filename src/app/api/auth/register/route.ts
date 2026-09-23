@@ -4,6 +4,7 @@ import { User, Restaurant } from "@/models";
 import { registerSchema } from "@/lib/validations";
 import { handleApiError, ok, parseBody, ApiError } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 function slugify(value: string) {
   return value
@@ -19,6 +20,7 @@ function slugify(value: string) {
  */
 export async function POST(request: Request) {
   try {
+    enforceRateLimit(request, "register", 5, 60 * 60_000);
     const input = await parseBody(request, registerSchema);
 
     await connectDB();

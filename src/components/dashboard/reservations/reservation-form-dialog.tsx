@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { api, ApiClientError } from "@/lib/api-client";
+import { todayKey } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -66,7 +67,7 @@ export function ReservationFormDialog({
   useEffect(() => {
     if (open) {
       form.reset({
-        date: new Date().toISOString().slice(0, 10),
+        date: todayKey(),
         time: "19:00",
         guests: 2,
       });

@@ -1,7 +1,19 @@
 import { NextRequest } from "next/server";
 import { Types } from "mongoose";
 import { Customer, Reservation } from "@/models";
-import { handleApiError, ok, requireTenantSession } from "@/lib/api-helpers";
+import {
+  branchFilter,
+  handleApiError,
+  ok,
+  requireTenantSession,
+} from "@/lib/api-helpers";
+import { TIMEZONE } from "@/lib/constants";
+import {
+  addDaysToKey,
+  dayKeyToDate,
+  dayStartInstant,
+  todayKey,
+} from "@/lib/dates";
 
 /**
  * Daily time series for the dashboard charts: reservations, revenue,
@@ -17,9 +29,13 @@ export async function GET(request: NextRequest) {
       Math.max(7, Number(request.nextUrl.searchParams.get("days")) || 30)
     );
 
-    const since = new Date();
-    since.setHours(0, 0, 0, 0);
-    since.setDate(since.getDate() - (days - 1));
+    const scope = branchFilter(ctx);
+    const today = todayKey();
+    const sinceKey = addDaysToKey(today, -(days - 1));
+    // Reservation dates are stored as UTC midnight of their Dhaka day;
+    // customer createdAt is a real instant, so it is bucketed in Dhaka time.
+    const since = dayKeyToDate(sinceKey);
+    const until = dayKeyToDate(addDaysToKey(today, 1));
 
     const dateGroup = {
       $dateToString: { format: "%Y-%m-%d", date: "$date" },
@@ -28,7 +44,7 @@ export async function GET(request: NextRequest) {
     const [reservationSeries, revenueSeries, customerSeries] =
       await Promise.all([
         Reservation.aggregate([
-          { $match: { restaurantId, date: { $gte: since } } },
+          { $match: { restaurantId, ...scope, date: { $gte: since, $lt: until } } },
           {
             $group: {
               _id: dateGroup,
@@ -53,8 +69,9 @@ export async function GET(request: NextRequest) {
           {
             $match: {
               restaurantId,
+              ...scope,
               status: "completed",
-              date: { $gte: since },
+              date: { $gte: since, $lt: until },
             },
           },
           {
@@ -67,11 +84,15 @@ export async function GET(request: NextRequest) {
           { $sort: { _id: 1 } },
         ]),
         Customer.aggregate([
-          { $match: { restaurantId, createdAt: { $gte: since } } },
+          { $match: { restaurantId, createdAt: { $gte: dayStartInstant(sinceKey) } } },
           {
             $group: {
               _id: {
-                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+                $dateToString: {
+                  format: "%Y-%m-%d",
+                  date: "$createdAt",
+                  timezone: TIMEZONE,
+                },
               },
               newCustomers: { $sum: 1 },
             },
@@ -96,9 +117,7 @@ export async function GET(request: NextRequest) {
     const customerMap = new Map(customerSeries.map((r) => [r._id, r]));
 
     for (let i = 0; i < days; i++) {
-      const day = new Date(since);
-      day.setDate(day.getDate() + i);
-      const key = day.toISOString().slice(0, 10);
+      const key = addDaysToKey(sinceKey, i);
       series.push({
         date: key,
         reservations: reservationMap.get(key)?.total ?? 0,

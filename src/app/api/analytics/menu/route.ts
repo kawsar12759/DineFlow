@@ -1,15 +1,16 @@
 import { Types } from "mongoose";
 import { AnalyticsEvent, MenuItem } from "@/models";
 import { handleApiError, ok, requireTenantSession } from "@/lib/api-helpers";
+import { addDaysToKey, dayStartInstant, todayKey } from "@/lib/dates";
 
 /** Menu popularity: view events per item + category distribution. */
 export async function GET() {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
     const restaurantId = new Types.ObjectId(ctx.restaurantId);
 
-    const since = new Date();
-    since.setDate(since.getDate() - 30);
+    // View events are real timestamps: last 30 days in Dhaka time.
+    const since = dayStartInstant(addDaysToKey(todayKey(), -29));
 
     const [views, categories, items] = await Promise.all([
       AnalyticsEvent.aggregate([

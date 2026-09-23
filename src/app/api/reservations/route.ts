@@ -3,6 +3,8 @@ import { Branch, Customer, Reservation } from "@/models";
 import { reservationSchema } from "@/lib/validations";
 import {
   ApiError,
+  assertBranchAccess,
+  branchFilter,
   handleApiError,
   ok,
   paginated,
@@ -13,6 +15,8 @@ import {
   tenantFilter,
 } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
+import { claimSlotCapacity } from "@/lib/capacity";
+import { dayKeyToDate, isDayKey } from "@/lib/dates";
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,16 +27,18 @@ export async function GET(request: NextRequest) {
     const branchId = searchParams.get("branchId");
     const date = searchParams.get("date");
 
-    const filter: Record<string, unknown> = { ...tenantFilter(ctx) };
+    const filter: Record<string, unknown> = {
+      ...tenantFilter(ctx),
+      ...branchFilter(ctx),
+    };
     if (status && status !== "all") filter.status = status;
     if (branchId && branchId !== "all") {
+      assertBranchAccess(ctx, branchId);
       filter.branchId = parseObjectId(branchId, "branch id");
     }
     if (date) {
-      const day = new Date(date);
-      const next = new Date(day);
-      next.setDate(next.getDate() + 1);
-      filter.date = { $gte: day, $lt: next };
+      if (!isDayKey(date)) throw new ApiError("Invalid date", 400);
+      filter.date = dayKeyToDate(date);
     }
 
     const [reservations, total] = await Promise.all([
@@ -57,6 +63,7 @@ export async function POST(request: NextRequest) {
     const ctx = await requireTenantSession();
     const input = await parseBody(request, reservationSchema);
 
+    assertBranchAccess(ctx, input.branchId);
     const branch = await Branch.findOne({
       _id: parseObjectId(input.branchId, "branch id"),
       ...tenantFilter(ctx),
@@ -98,13 +105,20 @@ export async function POST(request: NextRequest) {
       ...tenantFilter(ctx),
       branchId: branch._id,
       customerId,
-      date: new Date(input.date),
+      date: dayKeyToDate(input.date),
       time: input.time,
       guests: input.guests,
       specialRequests: input.specialRequests,
       estimatedSpend: input.estimatedSpend,
       status: "pending",
     });
+
+    if (!(await claimSlotCapacity(reservation, branch.capacity))) {
+      throw new ApiError(
+        `${branch.name} is fully booked around ${input.time} — choose another time`,
+        409
+      );
+    }
 
     await trackEvent(ctx.restaurantId, "reservation_created", {
       reservationId: reservation._id.toString(),

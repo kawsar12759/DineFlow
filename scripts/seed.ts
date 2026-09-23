@@ -21,6 +21,7 @@ import {
   Customer,
   AnalyticsEvent,
 } from "../src/models";
+import { addDaysToKey, dayKeyToDate, todayKey } from "../src/lib/dates";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 if (!MONGODB_URI) {
@@ -36,11 +37,9 @@ function pick<T>(items: readonly T[]): T {
   return items[randomInt(0, items.length - 1)];
 }
 
+/** A Dhaka calendar day `days` ago, in the stored UTC-midnight form. */
 function daysAgo(days: number) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() - days);
-  return date;
+  return dayKeyToDate(addDaysToKey(todayKey(), -days));
 }
 
 const FIRST_NAMES = [
@@ -256,7 +255,7 @@ async function seed() {
   for (let day = 90; day >= -7; day--) {
     const date = daysAgo(day);
     const isPast = day > 0;
-    const isWeekend = [4, 5, 6].includes(date.getDay());
+    const isWeekend = [4, 5, 6].includes(date.getUTCDay());
     // Volume grows over time and peaks Thu night–Sat (the Bangladeshi weekend)
     const base = 3 + Math.round((90 - day) / 18) + (isWeekend ? 4 : 0);
     const count = randomInt(Math.max(1, base - 2), base + 3);
@@ -293,7 +292,7 @@ async function seed() {
       }
 
       const createdAt = new Date(date);
-      createdAt.setDate(createdAt.getDate() - randomInt(1, 6));
+      createdAt.setUTCDate(createdAt.getUTCDate() - randomInt(1, 6));
 
       reservations.push({
         restaurantId: restaurant._id,

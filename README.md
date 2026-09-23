@@ -50,6 +50,16 @@ npm run seed
 npm run dev
 ```
 
+### Checks
+
+```bash
+npm run lint       # ESLint (next/core-web-vitals + TypeScript)
+npm run typecheck  # tsc --noEmit
+npm test           # Vitest: unit tests + API integration tests
+```
+
+Integration tests call the real route handlers against an in-memory MongoDB (`mongodb-memory-server`, downloaded on first run). They cover tenant isolation, staff branch scoping, session revalidation, the reservation lifecycle, capacity (including two bookings racing for the last seats) and rate limiting.
+
 ### Demo accounts (password: `password123`)
 
 | Email | Role |

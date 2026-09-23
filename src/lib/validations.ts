@@ -5,8 +5,10 @@ import {
   RESERVATION_STATUSES,
   STAFF_SHIFTS,
 } from "@/lib/constants";
+import { isDayKey } from "@/lib/dates";
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, "Invalid id");
+const dayKey = z.string().refine(isDayKey, { message: "Invalid date (YYYY-MM-DD)" });
 
 // ---------- Auth ----------
 
@@ -78,9 +80,7 @@ export const reservationSchema = z.object({
       phone: z.string().optional(),
     })
     .optional(),
-  date: z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
-    message: "Invalid date",
-  }),
+  date: dayKey,
   time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time (HH:MM)"),
   guests: z.coerce.number().int().min(1).max(50),
   specialRequests: z.string().max(500).optional(),
@@ -98,9 +98,7 @@ export const publicReservationSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email"),
   phone: z.string().optional(),
-  date: z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
-    message: "Invalid date",
-  }),
+  date: dayKey,
   time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time (HH:MM)"),
   guests: z.coerce.number().int().min(1).max(50),
   specialRequests: z.string().max(500).optional(),

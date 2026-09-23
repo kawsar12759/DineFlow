@@ -5,3 +5,4 @@ export { MenuItem, type IMenuItem } from "./MenuItem";
 export { Reservation, type IReservation } from "./Reservation";
 export { Customer, type ICustomer, type IVisit } from "./Customer";
 export { AnalyticsEvent, type IAnalyticsEvent } from "./AnalyticsEvent";
+export { ContactMessage, type IContactMessage } from "./ContactMessage";

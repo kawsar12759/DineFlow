@@ -34,6 +34,16 @@ async function request<T>(url: string, init?: RequestInit): Promise<ApiResponse<
 
   const body = await response.json().catch(() => null);
 
+  // The server rejected the session (e.g. account deactivated mid-session):
+  // clear it instead of leaving the dashboard full of failing requests.
+  if (
+    response.status === 401 &&
+    typeof window !== "undefined" &&
+    window.location.pathname.startsWith("/dashboard")
+  ) {
+    window.location.assign("/signed-out");
+  }
+
   if (!response.ok || !body?.success) {
     throw new ApiClientError(
       body?.error ?? `Request failed (${response.status})`,

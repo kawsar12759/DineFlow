@@ -7,6 +7,7 @@ import {
   ok,
   parseBody,
   parseObjectId,
+  branchFilter,
   requireTenantSession,
   tenantFilter,
 } from "@/lib/api-helpers";
@@ -21,6 +22,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const branch = await Branch.findOne({
       _id: parseObjectId(id, "branch id"),
       ...tenantFilter(ctx),
+      ...branchFilter(ctx, "_id"),
     }).lean();
 
     if (!branch) throw new ApiError("Branch not found", 404);

@@ -7,6 +7,7 @@ import {
   paginated,
   parseBody,
   parsePagination,
+  branchFilter,
   requireTenantSession,
   tenantFilter,
 } from "@/lib/api-helpers";
@@ -19,7 +20,10 @@ export async function GET(request: NextRequest) {
     const { page, limit, skip } = parsePagination(searchParams);
     const search = searchParams.get("search")?.trim();
 
-    const filter: Record<string, unknown> = { ...tenantFilter(ctx) };
+    const filter: Record<string, unknown> = {
+      ...tenantFilter(ctx),
+      ...branchFilter(ctx, "_id"),
+    };
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: "i" } },

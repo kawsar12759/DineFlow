@@ -26,6 +26,26 @@ export const RESERVATION_STATUSES = [
 
 export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
 
+/** Statuses that hold seats at a branch. */
+export const ACTIVE_RESERVATION_STATUSES: ReservationStatus[] = [
+  "pending",
+  "approved",
+  "seated",
+];
+
+/** Allowed reservation lifecycle moves. */
+export const RESERVATION_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
+  pending: ["approved", "rejected", "cancelled"],
+  approved: ["seated", "cancelled"],
+  rejected: [],
+  seated: ["completed"],
+  completed: [],
+  cancelled: [],
+};
+
+/** How long a party holds its seats, used for capacity checks. */
+export const DINING_DURATION_MINUTES = 90;
+
 export const RESERVATION_STATUS_META: Record<
   ReservationStatus,
   { label: string; className: string }

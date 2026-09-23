@@ -10,6 +10,7 @@ import {
   requireTenantSession,
   tenantFilter,
 } from "@/lib/api-helpers";
+import { menuBranchFilter } from "@/lib/menu-scope";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -21,6 +22,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const item = await MenuItem.findOne({
       _id: parseObjectId(id, "menu item id"),
       ...tenantFilter(ctx),
+      ...menuBranchFilter(ctx),
     })
       .populate("branchId", "name")
       .lean();
@@ -62,7 +64,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const item = await MenuItem.findOneAndUpdate(
-      { _id: parseObjectId(id, "menu item id"), ...tenantFilter(ctx) },
+      {
+        _id: parseObjectId(id, "menu item id"),
+        ...tenantFilter(ctx),
+        ...menuBranchFilter(ctx),
+      },
       { $set: update },
       { new: true, runValidators: true }
     ).lean();

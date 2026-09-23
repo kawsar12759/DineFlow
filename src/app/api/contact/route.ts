@@ -1,19 +1,17 @@
+import { connectDB } from "@/lib/db";
+import { ContactMessage } from "@/models";
 import { contactSchema } from "@/lib/validations";
 import { handleApiError, ok, parseBody } from "@/lib/api-helpers";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
-/**
- * Contact form endpoint. In production this would forward to a
- * ticketing system or transactional email provider; here we validate
- * and acknowledge.
- */
+/** Contact form endpoint. Messages are stored for the platform team to follow up. */
 export async function POST(request: Request) {
   try {
+    enforceRateLimit(request, "contact", 5, 10 * 60_000);
     const input = await parseBody(request, contactSchema);
 
-    console.info("[contact] message received", {
-      from: input.email,
-      subject: input.subject,
-    });
+    await connectDB();
+    await ContactMessage.create(input);
 
     return ok({ received: true }, { status: 201 });
   } catch (error) {

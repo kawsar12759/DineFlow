@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { connectDB } from "@/lib/db";
 import { Restaurant } from "@/models";
 import { Sidebar, MobileNav } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { DASHBOARD_ROLES } from "@/lib/constants";
+import { loadActiveUser } from "@/lib/api-helpers";
 
 export default async function DashboardLayout({
   children,
@@ -17,7 +17,13 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const { role, restaurantId, name, email } = session.user;
+  // Re-read the user so deactivation and role changes apply immediately.
+  const user = await loadActiveUser(session.user.id);
+  if (!user) {
+    redirect("/signed-out");
+  }
+
+  const { role, restaurantId, name, email } = user;
 
   if (!DASHBOARD_ROLES.includes(role)) {
     redirect("/");
@@ -25,7 +31,6 @@ export default async function DashboardLayout({
 
   let restaurantName: string | undefined;
   if (restaurantId) {
-    await connectDB();
     const restaurant = await Restaurant.findById(restaurantId)
       .select("name")
       .lean();

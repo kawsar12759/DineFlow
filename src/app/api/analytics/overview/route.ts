@@ -1,33 +1,44 @@
 import { Types } from "mongoose";
 import { Branch, Customer, Reservation } from "@/models";
 import {
+  branchFilter,
   handleApiError,
   ok,
   requireTenantSession,
 } from "@/lib/api-helpers";
 import { percentChange } from "@/lib/utils";
-
-function startOfDay(date: Date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+import {
+  addDaysToKey,
+  dayKeyToDate,
+  monthStartKey,
+  todayKey,
+} from "@/lib/dates";
 
 export async function GET() {
   try {
     const ctx = await requireTenantSession();
     const restaurantId = new Types.ObjectId(ctx.restaurantId);
 
-    const now = new Date();
-    const todayStart = startOfDay(now);
-    const tomorrowStart = new Date(todayStart);
-    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    // Staff assigned to a branch see that branch's numbers only.
+    const scope = branchFilter(ctx);
+    const branchScope = branchFilter(ctx, "_id");
 
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const today = todayKey();
+    const todayStart = dayKeyToDate(today);
+    const tomorrowStart = dayKeyToDate(addDaysToKey(today, 1));
+    const yesterdayStart = dayKeyToDate(addDaysToKey(today, -1));
+    const monthStart = dayKeyToDate(monthStartKey(today));
+    const prevMonthStart = dayKeyToDate(monthStartKey(today, -1));
+    const thirtyDaysAgo = dayKeyToDate(addDaysToKey(today, -30));
 
-    const thirtyDaysAgo = new Date(todayStart);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Compare month-to-date against the same number of days last month.
+    const daysElapsed = Number(today.slice(8, 10));
+    const prevComparableEnd = new Date(
+      Math.min(
+        dayKeyToDate(addDaysToKey(monthStartKey(today, -1), daysElapsed)).getTime(),
+        monthStart.getTime()
+      )
+    );
 
     const [
       todaysReservations,
@@ -43,21 +54,21 @@ export async function GET() {
     ] = await Promise.all([
       Reservation.countDocuments({
         restaurantId,
+        ...scope,
         date: { $gte: todayStart, $lt: tomorrowStart },
       }),
       Reservation.countDocuments({
         restaurantId,
-        date: {
-          $gte: new Date(todayStart.getTime() - 86400000),
-          $lt: todayStart,
-        },
+        ...scope,
+        date: { $gte: yesterdayStart, $lt: todayStart },
       }),
       Reservation.aggregate([
         {
           $match: {
             restaurantId,
             status: "completed",
-            date: { $gte: monthStart },
+            ...scope,
+            date: { $gte: monthStart, $lt: tomorrowStart },
           },
         },
         { $group: { _id: null, total: { $sum: "$estimatedSpend" } } },
@@ -67,7 +78,8 @@ export async function GET() {
           $match: {
             restaurantId,
             status: "completed",
-            date: { $gte: prevMonthStart, $lt: monthStart },
+            ...scope,
+            date: { $gte: prevMonthStart, $lt: prevComparableEnd },
           },
         },
         { $group: { _id: null, total: { $sum: "$estimatedSpend" } } },
@@ -76,6 +88,7 @@ export async function GET() {
         {
           $match: {
             restaurantId,
+            ...scope,
             date: { $gte: todayStart, $lt: tomorrowStart },
             status: { $in: ["approved", "seated", "completed"] },
           },
@@ -83,15 +96,16 @@ export async function GET() {
         { $group: { _id: null, guests: { $sum: "$guests" } } },
       ]),
       Branch.aggregate([
-        { $match: { restaurantId, isActive: true } },
+        { $match: { restaurantId, ...branchScope, isActive: true } },
         { $group: { _id: null, capacity: { $sum: "$capacity" } } },
       ]),
       Reservation.aggregate([
         {
           $match: {
             restaurantId,
+            ...scope,
             status: { $in: ["completed", "seated", "approved"] },
-            date: { $gte: thirtyDaysAgo },
+            date: { $gte: thirtyDaysAgo, $lt: tomorrowStart },
           },
         },
         { $group: { _id: "$branchId", count: { $sum: 1 } } },
@@ -113,7 +127,7 @@ export async function GET() {
         "visitHistory.date": { $gte: thirtyDaysAgo },
       }),
       Customer.countDocuments({ restaurantId }),
-      Reservation.countDocuments({ restaurantId, status: "pending" }),
+      Reservation.countDocuments({ restaurantId, ...scope, status: "pending" }),
     ]);
 
     const revenue = revenueAgg[0]?.total ?? 0;

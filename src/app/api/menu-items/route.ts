@@ -8,9 +8,11 @@ import {
   parseBody,
   parseObjectId,
   parsePagination,
+  assertBranchAccess,
   requireTenantSession,
   tenantFilter,
 } from "@/lib/api-helpers";
+import { menuBranchFilter } from "@/lib/menu-scope";
 import { trackEvent } from "@/lib/analytics";
 
 export async function GET(request: NextRequest) {
@@ -23,10 +25,16 @@ export async function GET(request: NextRequest) {
     const branchId = searchParams.get("branchId");
     const availability = searchParams.get("availability");
 
-    const filter: Record<string, unknown> = { ...tenantFilter(ctx) };
+    const filter: Record<string, unknown> = {
+      ...tenantFilter(ctx),
+      ...menuBranchFilter(ctx),
+    };
     if (search) filter.name = { $regex: search, $options: "i" };
     if (category && category !== "all") filter.category = category;
-    if (branchId) filter.branchId = parseObjectId(branchId, "branch id");
+    if (branchId) {
+      assertBranchAccess(ctx, branchId);
+      filter.branchId = parseObjectId(branchId, "branch id");
+    }
     if (availability === "true") filter.availability = true;
     if (availability === "false") filter.availability = false;
 

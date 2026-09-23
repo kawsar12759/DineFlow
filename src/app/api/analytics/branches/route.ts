@@ -1,20 +1,23 @@
 import { Types } from "mongoose";
 import { Branch, Reservation } from "@/models";
 import { handleApiError, ok, requireTenantSession } from "@/lib/api-helpers";
+import { addDaysToKey, dayKeyToDate, todayKey } from "@/lib/dates";
 
 /** Per-branch performance: reservations, revenue, covers, utilization. */
 export async function GET() {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
     const restaurantId = new Types.ObjectId(ctx.restaurantId);
 
-    const since = new Date();
-    since.setDate(since.getDate() - 30);
+    // Last 30 Dhaka days, today included; future bookings are excluded.
+    const today = todayKey();
+    const since = dayKeyToDate(addDaysToKey(today, -29));
+    const until = dayKeyToDate(addDaysToKey(today, 1));
 
     const [branches, performance] = await Promise.all([
       Branch.find({ restaurantId }).lean(),
       Reservation.aggregate([
-        { $match: { restaurantId, date: { $gte: since } } },
+        { $match: { restaurantId, date: { $gte: since, $lt: until } } },
         {
           $group: {
             _id: "$branchId",

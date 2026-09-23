@@ -3,22 +3,34 @@ import { Types } from "mongoose";
 import { ZodError, type ZodSchema } from "zod";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
+import { User } from "@/models";
 import { DASHBOARD_ROLES, PAGE_SIZE, type Role } from "@/lib/constants";
 
-export class ApiError extends Error {
-  status: number;
+import { ApiError } from "@/lib/api-error";
 
-  constructor(message: string, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
+export { ApiError };
 
 export interface SessionContext {
   userId: string;
   role: Role;
   restaurantId: string;
   branchId?: string;
+  /** Set when the user may only see one branch (branch-assigned staff). */
+  branchScope?: string;
+}
+
+/**
+ * Loads the signed-in user's current record. The JWT alone is not trusted
+ * for authorisation, so deactivation, role changes and branch reassignment
+ * take effect on the next request instead of when the token expires.
+ */
+export async function loadActiveUser(userId: string) {
+  if (!Types.ObjectId.isValid(userId)) return null;
+  await connectDB();
+  const user = await User.findById(userId)
+    .select("name email role restaurantId branchId isActive")
+    .lean();
+  return user?.isActive ? user : null;
 }
 
 /**
@@ -35,24 +47,50 @@ export async function requireTenantSession(
     throw new ApiError("Unauthorized", 401);
   }
 
-  const { id, role, restaurantId, branchId } = session.user;
+  const user = await loadActiveUser(session.user.id);
+  if (!user) {
+    throw new ApiError("Your account is inactive or no longer exists", 401);
+  }
 
-  if (!allowedRoles.includes(role)) {
+  if (!allowedRoles.includes(user.role)) {
     throw new ApiError("Forbidden: insufficient permissions", 403);
   }
 
-  if (!restaurantId) {
+  if (!user.restaurantId) {
     throw new ApiError("Forbidden: no restaurant context", 403);
   }
 
-  await connectDB();
+  const branchId = user.branchId?.toString();
 
-  return { userId: id, role, restaurantId, branchId };
+  return {
+    userId: user._id.toString(),
+    role: user.role,
+    restaurantId: user.restaurantId.toString(),
+    branchId,
+    branchScope: user.role === "staff" ? branchId : undefined,
+  };
 }
 
 /** Tenant filter every query must spread into its conditions. */
 export function tenantFilter(ctx: SessionContext) {
   return { restaurantId: new Types.ObjectId(ctx.restaurantId) };
+}
+
+/** Branch filter for branch-scoped users; empty for restaurant-wide roles. */
+export function branchFilter(ctx: SessionContext, field = "branchId") {
+  return ctx.branchScope
+    ? { [field]: new Types.ObjectId(ctx.branchScope) }
+    : {};
+}
+
+/** Throws 403 when a branch-scoped user touches another branch. */
+export function assertBranchAccess(
+  ctx: SessionContext,
+  branchId: Types.ObjectId | string | undefined | null
+) {
+  if (ctx.branchScope && String(branchId) !== ctx.branchScope) {
+    throw new ApiError("Forbidden: this belongs to another branch", 403);
+  }
 }
 
 export function parseObjectId(value: string, label = "id") {

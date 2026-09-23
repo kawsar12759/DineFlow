@@ -7,22 +7,14 @@ import {
   ok,
   parseBody,
   parseObjectId,
+  branchFilter,
   requireTenantSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
-import type { ReservationStatus } from "@/lib/constants";
+import { RESERVATION_TRANSITIONS } from "@/lib/constants";
 
 type RouteParams = { params: Promise<{ id: string }> };
-
-const ALLOWED_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
-  pending: ["approved", "rejected", "cancelled"],
-  approved: ["seated", "cancelled"],
-  rejected: [],
-  seated: ["completed"],
-  completed: [],
-  cancelled: [],
-};
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
@@ -32,6 +24,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const reservation = await Reservation.findOne({
       _id: parseObjectId(id, "reservation id"),
       ...tenantFilter(ctx),
+      ...branchFilter(ctx),
     })
       .populate("branchId", "name address")
       .populate("customerId", "name email phone")
@@ -54,11 +47,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const reservation = await Reservation.findOne({
       _id: parseObjectId(id, "reservation id"),
       ...tenantFilter(ctx),
+      ...branchFilter(ctx),
     });
 
     if (!reservation) throw new ApiError("Reservation not found", 404);
 
-    const allowed = ALLOWED_TRANSITIONS[reservation.status];
+    const allowed = RESERVATION_TRANSITIONS[reservation.status];
     if (!allowed.includes(status)) {
       throw new ApiError(
         `Cannot move reservation from "${reservation.status}" to "${status}"`,
@@ -118,6 +112,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     const reservation = await Reservation.findOneAndDelete({
       _id: parseObjectId(id, "reservation id"),
       ...tenantFilter(ctx),
+      ...branchFilter(ctx),
     }).lean();
 
     if (!reservation) throw new ApiError("Reservation not found", 404);

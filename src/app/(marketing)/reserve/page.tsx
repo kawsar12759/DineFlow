@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { currentTime, todayKey } from "@/lib/dates";
+import { formatTime } from "@/lib/utils";
 
 const bookingFormSchema = z.object({
   branchId: z.string().min(1, "Please choose a branch"),
@@ -44,9 +46,11 @@ interface PublicBranch {
   restaurant?: { name: string } | null;
 }
 
-const TIME_SLOTS = Array.from({ length: 28 }, (_, index) => {
-  const totalMinutes = 11 * 60 + index * 30; // 11:00 → 24:30
-  const hours = Math.floor(totalMinutes / 60) % 24;
+// Same-day slots only (11:00 → 22:30); opening-hours-aware slots come with
+// structured branch hours.
+const TIME_SLOTS = Array.from({ length: 24 }, (_, index) => {
+  const totalMinutes = 11 * 60 + index * 30;
+  const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 });
@@ -68,7 +72,7 @@ function ReserveForm() {
     defaultValues: {
       branchId: preselectedBranch,
       guests: 2,
-      date: new Date().toISOString().slice(0, 10),
+      date: todayKey(),
       time: "19:00",
     },
   });
@@ -173,7 +177,7 @@ function ReserveForm() {
               <Input
                 id="date"
                 type="date"
-                min={new Date().toISOString().slice(0, 10)}
+                min={todayKey()}
                 {...form.register("date")}
               />
               {form.formState.errors.date && (
@@ -195,8 +199,14 @@ function ReserveForm() {
                 </SelectTrigger>
                 <SelectContent>
                   {TIME_SLOTS.map((slot) => (
-                    <SelectItem key={slot} value={slot}>
-                      {slot}
+                    <SelectItem
+                      key={slot}
+                      value={slot}
+                      disabled={
+                        form.watch("date") === todayKey() && slot <= currentTime()
+                      }
+                    >
+                      {formatTime(slot)}
                     </SelectItem>
                   ))}
                 </SelectContent>

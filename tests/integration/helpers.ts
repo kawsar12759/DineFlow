@@ -45,6 +45,11 @@ export function params(id: string) {
   return { params: Promise.resolve({ id }) };
 }
 
+/** Route params for handlers that use a name other than "id". */
+export function routeParams<T extends Record<string, string>>(values: T) {
+  return { params: Promise.resolve(values) };
+}
+
 /** A booking day safely in the future. */
 export const TOMORROW = () => addDaysToKey(todayKey(), 1);
 

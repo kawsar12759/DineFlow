@@ -22,6 +22,7 @@ export const RESERVATION_STATUSES = [
   "seated",
   "completed",
   "cancelled",
+  "no_show",
 ] as const;
 
 export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
@@ -36,11 +37,12 @@ export const ACTIVE_RESERVATION_STATUSES: ReservationStatus[] = [
 /** Allowed reservation lifecycle moves. */
 export const RESERVATION_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
   pending: ["approved", "rejected", "cancelled"],
-  approved: ["seated", "cancelled"],
+  approved: ["seated", "cancelled", "no_show"],
   rejected: [],
   seated: ["completed"],
   completed: [],
   cancelled: [],
+  no_show: [],
 };
 
 /** Fallback booking rules; each restaurant can override them in Settings. */
@@ -113,6 +115,10 @@ export const RESERVATION_STATUS_META: Record<
   cancelled: {
     label: "Cancelled",
     className: "bg-slate-50 text-slate-500 border-slate-200",
+  },
+  no_show: {
+    label: "No-show",
+    className: "bg-orange-50 text-orange-700 border-orange-200",
   },
 };
 

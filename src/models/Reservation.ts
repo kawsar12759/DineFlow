@@ -6,6 +6,8 @@ export interface IReservation extends Document {
   restaurantId: Types.ObjectId;
   branchId: Types.ObjectId;
   customerId: Types.ObjectId;
+  /** Tables holding this booking; empty when the branch has no tables yet. */
+  tableIds: Types.ObjectId[];
   date: Date;
   time: string;
   guests: number;
@@ -36,6 +38,7 @@ const ReservationSchema = new Schema<IReservation>(
       required: true,
       index: true,
     },
+    tableIds: [{ type: Schema.Types.ObjectId, ref: "Table", index: true }],
     date: { type: Date, required: true },
     time: { type: String, required: true },
     guests: { type: Number, required: true, min: 1, max: 50 },

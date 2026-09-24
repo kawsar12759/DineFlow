@@ -11,7 +11,8 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 **Public site**
 - Marketing pages (home, features, pricing) with Framer Motion animations
 - A public page per restaurant at `/r/<slug>`: profile, locations with real opening hours, full menu, and booking
-- Live availability: guests only see slots inside opening hours that still have seats for their party size
+- Live availability: guests only see slots inside opening hours where a table actually fits their party
+- Guests manage their own booking from a signed link: view, change the time or cancel, no account needed
 - Public branch directory and searchable menu across published restaurants
 
 **SaaS dashboard**
@@ -23,6 +24,8 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - Staff management: scoped roles, branch/shift assignment, activate/deactivate
 - Settings: restaurant profile, publish/unpublish the public page, and booking rules (table hold time, slot interval, party size, lead time, how far ahead, auto-approve)
 - Weekly opening hours and holiday closures per branch; bookings are checked against both
+- Tables per branch (seats, zone), and a Floor view: a day timeline of tables against time where bookings can be dragged to another table, approved, seated, completed or marked no-show
+- Walk-ins and a waitlist: seat a party straight away, or hold them and seat them when a table frees up
 - Personal profile page with password change, and a light/dark theme toggle
 - Analytics: revenue, reservation, customer, branch, and menu popularity aggregations (server-side MongoDB pipelines)
 
@@ -101,6 +104,10 @@ await Branch.find({ ...filter, ...tenantFilter(ctx) }); // always scoped
 ```
 
 The public booking endpoint derives `restaurantId` from the selected branch document after validating it exists and is active.
+
+## Seating
+
+A branch with tables seats every booking on real tables: the smallest table that fits, or several joined within one zone for a large party. Availability, walk-ins and reschedules all go through the same fit check, and two bookings racing for the last table resolve so exactly one keeps it. A branch with no tables falls back to total seat capacity, so tables are optional.
 
 ## Booking rules
 

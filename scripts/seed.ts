@@ -20,7 +20,9 @@ import {
   Reservation,
   Customer,
   AnalyticsEvent,
+  Table,
 } from "../src/models";
+import { freeTablesAt, pickTables, type TableLike } from "../src/lib/tables";
 import { addDaysToKey, dayKeyToDate, todayKey } from "../src/lib/dates";
 import { DAYS_OF_WEEK } from "../src/lib/constants";
 
@@ -86,6 +88,7 @@ async function seed() {
     Reservation.deleteMany({}),
     Customer.deleteMany({}),
     AnalyticsEvent.deleteMany({}),
+    Table.deleteMany({}),
   ]);
   console.log("Cleared existing collections");
 
@@ -161,6 +164,44 @@ async function seed() {
     },
   ]);
   console.log(`Created ${branchDocs.length} branches`);
+
+  // Tables: a realistic mix of two-, four- and six-tops filling each branch.
+  const tableDocs = await Table.create(
+    branchDocs.flatMap((branch) => {
+      const plan: { seats: number; zone: string }[] = [];
+      let seated = 0;
+      let index = 0;
+      while (seated < branch.capacity) {
+        const seats = index % 5 === 4 ? 6 : index % 2 === 0 ? 4 : 2;
+        const zone = index < 6 ? "Main hall" : index < 12 ? "Terrace" : "Garden";
+        plan.push({ seats, zone });
+        seated += seats;
+        index += 1;
+      }
+      return plan.map((table, position) => ({
+        restaurantId: branch.restaurantId,
+        branchId: branch._id,
+        name: `T${String(position + 1).padStart(2, "0")}`,
+        seats: table.seats,
+        zone: table.zone,
+      }));
+    })
+  );
+  console.log(`Created ${tableDocs.length} tables`);
+
+  const tablesByBranch = new Map<string, TableLike[]>();
+  for (const table of tableDocs) {
+    const key = table.branchId.toString();
+    tablesByBranch.set(key, [
+      ...(tablesByBranch.get(key) ?? []),
+      {
+        _id: table._id.toString(),
+        name: table.name,
+        seats: table.seats,
+        zone: table.zone,
+      },
+    ]);
+  }
 
   // Staff
   await User.create([
@@ -273,6 +314,7 @@ async function seed() {
   // Reservations across the last 90 days + next 7 days
   const reservations: Record<string, unknown>[] = [];
   const events: Record<string, unknown>[] = [];
+  const bookingsByBranchDay = new Map<string, { time: string; tableIds: string[] }[]>();
   const customerStats = new Map<
     string,
     { visits: { date: Date; branchId: Types.ObjectId; spend: number; guests: number }[]; spend: number }
@@ -322,6 +364,21 @@ async function seed() {
         estimatedSpend = guests * randomInt(900, 2600);
       }
 
+      // Seat the party at free tables; skip the booking if nothing fits.
+      const dayKey = `${branch._id.toString()}|${date.toISOString().slice(0, 10)}`;
+      const dayBookings = bookingsByBranchDay.get(dayKey) ?? [];
+      const holdsTables = ["pending", "approved", "seated"].includes(status);
+      const picked = pickTables(
+        freeTablesAt(tablesByBranch.get(branch._id.toString()) ?? [], dayBookings, time),
+        guests
+      );
+      if (holdsTables && !picked) continue;
+      const tableIds = picked?.map((table) => new Types.ObjectId(table._id)) ?? [];
+      if (holdsTables) {
+        dayBookings.push({ time, tableIds: tableIds.map(String) });
+        bookingsByBranchDay.set(dayKey, dayBookings);
+      }
+
       const createdAt = new Date(date);
       createdAt.setUTCDate(createdAt.getUTCDate() - randomInt(1, 6));
 
@@ -329,6 +386,7 @@ async function seed() {
         restaurantId: restaurant._id,
         branchId: branch._id,
         customerId: customer._id,
+        tableIds,
         date,
         time,
         guests,
@@ -432,6 +490,16 @@ async function seed() {
     contactInfo: { phone: "+880 1511-200260" },
     hours: weeklyHours("17:30", "23:00"),
   });
+
+  await Table.create(
+    Array.from({ length: 10 }, (_, index) => ({
+      restaurantId: restaurant2._id,
+      branchId: branch2._id,
+      name: `S${index + 1}`,
+      seats: index < 6 ? 4 : 2,
+      zone: index < 6 ? "Counter" : "Tatami",
+    }))
+  );
 
   await MenuItem.create([
     { restaurantId: restaurant2._id, name: "Omakase Nigiri (12pc)", description: "Chef's selection of seasonal fish", price: 4500, category: "Specials", allergens: ["fish", "soy"], preparationTime: 35, availability: true, popularityScore: 80 },

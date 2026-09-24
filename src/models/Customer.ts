@@ -17,6 +17,7 @@ export interface ICustomer extends Document {
   visitHistory: IVisit[];
   totalSpend: number;
   visitCount: number;
+  noShowCount: number;
   tags: string[];
   notes?: string;
   createdAt: Date;
@@ -45,6 +46,7 @@ const CustomerSchema = new Schema<ICustomer>(
     ],
     totalSpend: { type: Number, default: 0 },
     visitCount: { type: Number, default: 0 },
+    noShowCount: { type: Number, default: 0 },
     tags: [{ type: String, trim: true }],
     notes: { type: String, trim: true },
   },

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { Branch, Reservation, Restaurant } from "@/models";
+import { Branch, Reservation, Restaurant, Table } from "@/models";
 import {
   ApiError,
   handleApiError,
@@ -44,13 +44,18 @@ export async function GET(request: NextRequest) {
       .lean();
     const settings = bookingSettings(restaurant?.bookingSettings);
 
-    const bookings = await Reservation.find({
-      branchId: new Types.ObjectId(branchId),
-      date: dayKeyToDate(date),
-      status: { $in: ACTIVE_RESERVATION_STATUSES },
-    })
-      .select("time guests")
-      .lean();
+    const [bookings, tables] = await Promise.all([
+      Reservation.find({
+        branchId: new Types.ObjectId(branchId),
+        date: dayKeyToDate(date),
+        status: { $in: ACTIVE_RESERVATION_STATUSES },
+      })
+        .select("time guests tableIds")
+        .lean(),
+      Table.find({ branchId: new Types.ObjectId(branchId), isActive: true })
+        .select("name seats zone")
+        .lean(),
+    ]);
 
     return ok({
       date,
@@ -64,7 +69,17 @@ export async function GET(request: NextRequest) {
         dayKey: date,
         settings,
         capacity: branch.capacity,
-        bookings,
+        bookings: bookings.map((booking) => ({
+          time: booking.time,
+          guests: booking.guests,
+          tableIds: (booking.tableIds ?? []).map(String),
+        })),
+        tables: tables.map((table) => ({
+          _id: table._id.toString(),
+          name: table.name,
+          seats: table.seats,
+          zone: table.zone,
+        })),
         guests,
       }),
     });

@@ -6,9 +6,11 @@ import { publicReservationSchema } from "@/lib/validations";
 import { ApiError, handleApiError, ok, parseBody } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
 import { claimSlotCapacity } from "@/lib/capacity";
+import { assignTables, claimTables } from "@/lib/table-assignment";
 import { dayKeyToDate } from "@/lib/dates";
 import { assertBookable, bookingSettings } from "@/lib/availability";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { bookingManageUrl } from "@/lib/booking-token";
 
 /**
  * Public booking endpoint used by the marketing site reservation form.
@@ -60,10 +62,25 @@ export async function POST(request: NextRequest) {
       { new: true, upsert: true }
     );
 
+    const seating = await assignTables({
+      branchId: branch._id,
+      date: dayKeyToDate(input.date),
+      time: input.time,
+      guests: input.guests,
+      duration: settings.diningDurationMinutes,
+    });
+    if (seating.noFit) {
+      throw new ApiError(
+        "No table free for that time — please choose another slot",
+        409
+      );
+    }
+
     const reservation = await Reservation.create({
       restaurantId,
       branchId: branch._id,
       customerId: customer._id,
+      tableIds: seating.tableIds,
       date: dayKeyToDate(input.date),
       time: input.time,
       guests: input.guests,
@@ -71,13 +88,15 @@ export async function POST(request: NextRequest) {
       status: settings.autoApprove ? "approved" : "pending",
     });
 
-    if (
-      !(await claimSlotCapacity(
-        reservation,
-        branch.capacity,
-        settings.diningDurationMinutes
-      ))
-    ) {
+    // Tables (when the branch uses them) or total seats decide the race.
+    const claimed = seating.usesTables
+      ? await claimTables(reservation, settings.diningDurationMinutes)
+      : await claimSlotCapacity(
+          reservation,
+          branch.capacity,
+          settings.diningDurationMinutes
+        );
+    if (!claimed) {
       throw new ApiError(
         "This time slot is fully booked — please choose another time",
         409
@@ -96,6 +115,11 @@ export async function POST(request: NextRequest) {
         reservationId: reservation._id.toString(),
         status: reservation.status,
         branch: branch.name,
+        // Link the guest can use to change or cancel their booking.
+        manageUrl: bookingManageUrl(
+          reservation._id.toString(),
+          request.nextUrl.origin
+        ),
       },
       { status: 201 }
     );

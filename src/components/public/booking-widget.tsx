@@ -57,7 +57,10 @@ export function BookingWidget({
   const [date, setDate] = useState(todayKey());
   const [guests, setGuests] = useState(2);
   const [time, setTime] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<{
+    status: string;
+    manageUrl: string;
+  } | null>(null);
   const [guest, setGuest] = useState({
     name: "",
     email: "",
@@ -86,7 +89,12 @@ export function BookingWidget({
 
   const book = useMutation({
     mutationFn: () =>
-      api.post<{ reservationId: string; status: string; branch: string }>(
+      api.post<{
+        reservationId: string;
+        status: string;
+        branch: string;
+        manageUrl: string;
+      }>(
         "/api/public/reservations",
         {
           restaurantId,
@@ -101,7 +109,10 @@ export function BookingWidget({
         }
       ),
     onSuccess: (response) => {
-      setConfirmation(response.data.status);
+      setConfirmation({
+        status: response.data.status,
+        manageUrl: response.data.manageUrl,
+      });
       setTime(null);
     },
     onError: (error) =>
@@ -117,23 +128,29 @@ export function BookingWidget({
       <div className="rounded-xl border bg-card p-6 text-center">
         <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
         <h3 className="mt-3 text-lg font-semibold">
-          {confirmation === "approved" ? "Table confirmed" : "Request received"}
+          {confirmation.status === "approved"
+            ? "Table confirmed"
+            : "Request received"}
         </h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          {confirmation === "approved"
+          {confirmation.status === "approved"
             ? `You're booked for ${guests} on ${date}. We look forward to seeing you.`
             : "The restaurant will confirm your table shortly."}
         </p>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => {
-            setConfirmation(null);
-            setGuest({ name: "", email: "", phone: "", specialRequests: "" });
-          }}
-        >
-          Book another table
-        </Button>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <Button asChild>
+            <a href={confirmation.manageUrl}>View or change your booking</a>
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setConfirmation(null);
+              setGuest({ name: "", email: "", phone: "", specialRequests: "" });
+            }}
+          >
+            Book another table
+          </Button>
+        </div>
       </div>
     );
   }

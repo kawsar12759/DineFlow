@@ -102,6 +102,18 @@ export const branchSchema = z.object({
 
 export const branchUpdateSchema = branchSchema.partial();
 
+// ---------- Tables ----------
+
+export const tableSchema = z.object({
+  branchId: objectId,
+  name: z.string().min(1, "Table name is required").max(30),
+  seats: z.coerce.number().int().min(1, "At least 1 seat").max(30),
+  zone: z.string().max(40).optional().or(z.literal("")),
+  isActive: z.boolean().optional(),
+});
+
+export const tableUpdateSchema = tableSchema.partial().omit({ branchId: true });
+
 // ---------- Menu items ----------
 
 export const menuItemSchema = z.object({
@@ -122,6 +134,8 @@ export const menuItemUpdateSchema = menuItemSchema.partial();
 
 export const reservationSchema = z.object({
   branchId: objectId,
+  /** Walk-ins are created already seated; online bookings start pending. */
+  status: z.enum(["pending", "approved", "seated"]).optional(),
   customerId: objectId.optional(),
   customer: z
     .object({
@@ -141,6 +155,23 @@ export const reservationStatusSchema = z.object({
   status: z.enum(RESERVATION_STATUSES),
 });
 
+/** Status change, reschedule and/or table move — at least one of them. */
+export const reservationUpdateSchema = z
+  .object({
+    status: z.enum(RESERVATION_STATUSES).optional(),
+    date: dayKey.optional(),
+    time: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time (HH:MM)")
+      .optional(),
+    guests: z.coerce.number().int().min(1).max(50).optional(),
+    tableIds: z.array(objectId).max(4).optional(),
+    estimatedSpend: z.coerce.number().min(0).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "Nothing to update",
+  });
+
 // Public booking form (marketing site) — includes restaurant selection
 export const publicReservationSchema = z.object({
   restaurantId: objectId,
@@ -153,6 +184,48 @@ export const publicReservationSchema = z.object({
   guests: z.coerce.number().int().min(1).max(50),
   specialRequests: z.string().max(500).optional(),
 });
+
+// ---------- Waitlist ----------
+
+export const waitlistSchema = z.object({
+  branchId: objectId,
+  date: dayKey,
+  name: z.string().min(2, "Name is required").max(80),
+  phone: z.string().max(30).optional().or(z.literal("")),
+  guests: z.coerce.number().int().min(1).max(50),
+  quotedMinutes: z.coerce.number().int().min(0).max(600).optional(),
+  notes: z.string().max(300).optional().or(z.literal("")),
+});
+
+export const waitlistUpdateSchema = z.object({
+  status: z.enum(["waiting", "seated", "left"]).optional(),
+  quotedMinutes: z.coerce.number().int().min(0).max(600).optional(),
+  /** Time to seat the party at when marking it seated; defaults to now. */
+  time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time (HH:MM)")
+    .optional(),
+});
+
+/** What a guest may change through their booking link. */
+export const publicBookingUpdateSchema = z
+  .object({
+    action: z.enum(["cancel", "reschedule"]),
+    date: dayKey.optional(),
+    time: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time (HH:MM)")
+      .optional(),
+    guests: z.coerce.number().int().min(1).max(50).optional(),
+  })
+  .refine(
+    (value) =>
+      value.action === "cancel" ||
+      value.date !== undefined ||
+      value.time !== undefined ||
+      value.guests !== undefined,
+    { message: "Choose a new date, time or party size" }
+  );
 
 // ---------- Customers ----------
 
@@ -232,6 +305,8 @@ export type PublicReservationInput = z.infer<typeof publicReservationSchema>;
 export type CustomerInput = z.infer<typeof customerSchema>;
 export type StaffInput = z.infer<typeof staffSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
+export type WaitlistInput = z.infer<typeof waitlistSchema>;
+export type TableInput = z.infer<typeof tableSchema>;
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type RestaurantProfileInput = z.infer<typeof restaurantProfileSchema>;
 export type BookingSettingsInput = z.infer<typeof bookingSettingsSchema>;

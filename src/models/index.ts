@@ -6,3 +6,5 @@ export { Reservation, type IReservation } from "./Reservation";
 export { Customer, type ICustomer, type IVisit } from "./Customer";
 export { AnalyticsEvent, type IAnalyticsEvent } from "./AnalyticsEvent";
 export { ContactMessage, type IContactMessage } from "./ContactMessage";
+export { Table, type ITable } from "./Table";
+export { WaitlistEntry, WAITLIST_STATUSES, type IWaitlistEntry, type WaitlistStatus } from "./WaitlistEntry";

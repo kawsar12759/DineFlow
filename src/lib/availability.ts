@@ -13,6 +13,12 @@ import {
   todayKey,
 } from "@/lib/dates";
 import { peakGuests, type SlotBooking } from "@/lib/seating";
+import {
+  canSeatParty,
+  freeSeatsAt,
+  type TableBooking,
+  type TableLike,
+} from "@/lib/tables";
 
 export function minutesToTime(minutes: number) {
   const total = ((minutes % 1440) + 1440) % 1440;
@@ -85,13 +91,18 @@ export interface SlotStatus {
   reason?: "past" | "full" | "party";
 }
 
-/** Slot-by-slot availability for a branch on one day. */
+/**
+ * Slot-by-slot availability for a branch on one day. When the branch has
+ * tables, a slot is bookable only if the party actually fits on the free
+ * tables; otherwise total seat capacity is used.
+ */
 export function slotAvailability({
   branch,
   dayKey,
   settings,
   capacity,
   bookings,
+  tables,
   guests = 1,
   now = new Date(),
 }: {
@@ -99,18 +110,27 @@ export function slotAvailability({
   dayKey: string;
   settings: BookingSettings;
   capacity: number;
-  bookings: SlotBooking[];
+  bookings: (SlotBooking & { tableIds?: string[] })[];
+  tables?: TableLike[];
   guests?: number;
   now?: Date;
 }): SlotStatus[] {
   const earliest = now.getTime() + settings.minLeadMinutes * 60_000;
   const partyTooLarge = guests > settings.maxPartySize;
+  const useTables = !!tables?.length;
+  const tableBookings: TableBooking[] = bookings.map((booking) => ({
+    time: booking.time,
+    tableIds: booking.tableIds ?? [],
+  }));
 
   return bookableSlots(branch, dayKey, settings).map((time) => {
-    const seatsLeft = Math.max(
-      0,
-      capacity - peakGuests(bookings, time, settings.diningDurationMinutes)
-    );
+    const duration = settings.diningDurationMinutes;
+    const seatsLeft = useTables
+      ? freeSeatsAt(tables!, tableBookings, time, duration)
+      : Math.max(0, capacity - peakGuests(bookings, time, duration));
+    const fits = useTables
+      ? canSeatParty(tables!, tableBookings, time, guests, duration)
+      : seatsLeft >= guests;
 
     if (partyTooLarge) {
       return { time, seatsLeft, available: false, reason: "party" as const };
@@ -118,7 +138,7 @@ export function slotAvailability({
     if (slotInstant(dayKey, time).getTime() < earliest) {
       return { time, seatsLeft, available: false, reason: "past" as const };
     }
-    if (seatsLeft < guests) {
+    if (!fits) {
       return { time, seatsLeft, available: false, reason: "full" as const };
     }
     return { time, seatsLeft, available: true };

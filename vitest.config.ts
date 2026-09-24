@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     environment: "node",
+    // Route handlers sign guest booking links; auth is not exercised here.
+    env: { AUTH_SECRET: "test-secret-for-booking-tokens" },
     include: ["tests/**/*.test.ts"],
     globalSetup: ["tests/global-setup.ts"],
     // The first run downloads a MongoDB binary for the integration tests.

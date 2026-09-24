@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Armchair,
   BarChart3,
   CalendarCheck,
   ChefHat,
+  Grid2x2,
   LayoutDashboard,
   MoreHorizontal,
   Settings,
@@ -44,9 +46,21 @@ const navItems: NavItem[] = [
     roles: ["super_admin", "owner", "manager", "staff"],
   },
   {
+    href: "/dashboard/floor",
+    label: "Floor",
+    icon: Grid2x2,
+    roles: ["super_admin", "owner", "manager", "staff"],
+  },
+  {
     href: "/dashboard/branches",
     label: "Branches",
     icon: Store,
+    roles: ["super_admin", "owner", "manager"],
+  },
+  {
+    href: "/dashboard/tables",
+    label: "Tables",
+    icon: Armchair,
     roles: ["super_admin", "owner", "manager"],
   },
   {

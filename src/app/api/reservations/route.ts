@@ -16,6 +16,7 @@ import {
 } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
 import { claimSlotCapacity } from "@/lib/capacity";
+import { assignTables, claimTables } from "@/lib/table-assignment";
 import { dayKeyToDate, isDayKey } from "@/lib/dates";
 import { assertBookable, bookingSettings } from "@/lib/availability";
 
@@ -117,25 +118,41 @@ export async function POST(request: NextRequest) {
       throw new ApiError("Either customerId or customer details required", 400);
     }
 
+    const seating = await assignTables({
+      branchId: branch._id,
+      date: dayKeyToDate(input.date),
+      time: input.time,
+      guests: input.guests,
+      duration: settings.diningDurationMinutes,
+    });
+    if (seating.noFit) {
+      throw new ApiError(
+        `No table free at ${branch.name} for ${input.guests} at ${input.time}`,
+        409
+      );
+    }
+
     const reservation = await Reservation.create({
       ...tenantFilter(ctx),
       branchId: branch._id,
       customerId,
+      tableIds: seating.tableIds,
       date: dayKeyToDate(input.date),
       time: input.time,
       guests: input.guests,
       specialRequests: input.specialRequests,
       estimatedSpend: input.estimatedSpend,
-      status: "pending",
+      status: input.status ?? "pending",
     });
 
-    if (
-      !(await claimSlotCapacity(
-        reservation,
-        branch.capacity,
-        settings.diningDurationMinutes
-      ))
-    ) {
+    const claimed = seating.usesTables
+      ? await claimTables(reservation, settings.diningDurationMinutes)
+      : await claimSlotCapacity(
+          reservation,
+          branch.capacity,
+          settings.diningDurationMinutes
+        );
+    if (!claimed) {
       throw new ApiError(
         `${branch.name} is fully booked around ${input.time} — choose another time`,
         409

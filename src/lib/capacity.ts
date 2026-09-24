@@ -2,46 +2,11 @@ import type { Types } from "mongoose";
 import { Reservation } from "@/models";
 import {
   ACTIVE_RESERVATION_STATUSES,
-  DINING_DURATION_MINUTES,
+  DEFAULT_BOOKING_SETTINGS,
 } from "@/lib/constants";
-import { timeToMinutes } from "@/lib/dates";
+import { peakGuests } from "@/lib/seating";
 
-export interface SlotBooking {
-  time: string;
-  guests: number;
-}
-
-/**
- * Highest number of guests seated at once during a party's stay
- * [time, time + duration). Occupancy only rises when a booking starts, so the
- * peak is at the new party's start or at a later booking's start inside the window.
- */
-export function peakGuests(
-  bookings: SlotBooking[],
-  time: string,
-  duration = DINING_DURATION_MINUTES
-) {
-  const start = timeToMinutes(time);
-  const end = start + duration;
-  const intervals = bookings.map((booking) => {
-    const bookingStart = timeToMinutes(booking.time);
-    return { start: bookingStart, end: bookingStart + duration, guests: booking.guests };
-  });
-
-  const checkpoints = [
-    start,
-    ...intervals.map((i) => i.start).filter((s) => s > start && s < end),
-  ];
-
-  return Math.max(
-    0,
-    ...checkpoints.map((point) =>
-      intervals
-        .filter((i) => i.start <= point && point < i.end)
-        .reduce((sum, i) => sum + i.guests, 0)
-    )
-  );
-}
+export { peakGuests, type SlotBooking } from "@/lib/seating";
 
 /**
  * Race-safe capacity check, run right after a reservation is inserted.
@@ -57,7 +22,8 @@ export async function claimSlotCapacity(
     date: Date;
     time: string;
   },
-  capacity: number
+  capacity: number,
+  duration: number = DEFAULT_BOOKING_SETTINGS.diningDurationMinutes
 ) {
   const sameDay = await Reservation.find({
     branchId: reservation.branchId,
@@ -68,7 +34,7 @@ export async function claimSlotCapacity(
     .select("time guests")
     .lean();
 
-  if (peakGuests(sameDay, reservation.time) <= capacity) return true;
+  if (peakGuests(sameDay, reservation.time, duration) <= capacity) return true;
 
   await Reservation.deleteOne({ _id: reservation._id });
   return false;

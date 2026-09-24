@@ -8,6 +8,7 @@ import {
   ChefHat,
   LayoutDashboard,
   MoreHorizontal,
+  Settings,
   Store,
   UserCog,
   Users,
@@ -71,6 +72,12 @@ const navItems: NavItem[] = [
     label: "Analytics",
     icon: BarChart3,
     roles: ["super_admin", "owner", "manager"],
+  },
+  {
+    href: "/dashboard/settings",
+    label: "Settings",
+    icon: Settings,
+    roles: ["super_admin", "owner"],
   },
 ];
 

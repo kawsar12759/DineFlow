@@ -22,6 +22,17 @@ import {
   AnalyticsEvent,
 } from "../src/models";
 import { addDaysToKey, dayKeyToDate, todayKey } from "../src/lib/dates";
+import { DAYS_OF_WEEK } from "../src/lib/constants";
+
+/** Weekly hours helper: same times every day, with optional closed days. */
+function weeklyHours(open: string, close: string, closedDays: number[] = []) {
+  return DAYS_OF_WEEK.map((_, day) => ({
+    day,
+    open,
+    close,
+    closed: closedDays.includes(day),
+  }));
+}
 
 const MONGODB_URI = process.env.MONGODB_URI;
 if (!MONGODB_URI) {
@@ -59,7 +70,8 @@ function bdMobile() {
   return `+880 ${operator}${randomInt(10, 99)}-${randomInt(100000, 999999)}`;
 }
 
-const TIMES = ["12:30", "13:00", "13:30", "14:00", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00"];
+const LUNCH_TIMES = ["12:30", "13:00", "13:30", "14:00"];
+const DINNER_TIMES = ["19:00", "19:30", "20:00", "20:30", "21:00"];
 
 async function seed() {
   await mongoose.connect(MONGODB_URI!);
@@ -93,6 +105,17 @@ async function seed() {
     ownerId: owner._id,
     subscriptionPlan: "growth",
     cuisine: "Wood-fired Continental",
+    phone: "+880 1711-201100",
+    email: "hello@ember-oak.com",
+    isPublished: true,
+    bookingSettings: {
+      diningDurationMinutes: 90,
+      slotIntervalMinutes: 30,
+      maxPartySize: 12,
+      minLeadMinutes: 60,
+      maxDaysAhead: 60,
+      autoApprove: false,
+    },
     description:
       "Wood-fired continental dining with seasonal Bangladeshi produce, steaks and a signature mocktail bar.",
   });
@@ -107,7 +130,7 @@ async function seed() {
       address: { street: "House 12, Road 55, Gulshan 2", city: "Dhaka", state: "Dhaka", zip: "1212", country: "Bangladesh" },
       capacity: 90,
       contactInfo: { phone: "+880 1711-201110", email: "gulshan@ember-oak.com" },
-      openingHours: "Daily 12:00–23:00",
+      hours: weeklyHours("12:00", "23:00"),
     },
     {
       restaurantId: restaurant._id,
@@ -115,7 +138,7 @@ async function seed() {
       address: { street: "House 27, Road 8A, Dhanmondi", city: "Dhaka", state: "Dhaka", zip: "1209", country: "Bangladesh" },
       capacity: 64,
       contactInfo: { phone: "+880 1811-201145", email: "dhanmondi@ember-oak.com" },
-      openingHours: "Daily 12:30–23:30",
+      hours: weeklyHours("12:30", "23:30"),
     },
     {
       restaurantId: restaurant._id,
@@ -123,7 +146,7 @@ async function seed() {
       address: { street: "House 5, Road 11, Sector 4, Uttara", city: "Dhaka", state: "Dhaka", zip: "1230", country: "Bangladesh" },
       capacity: 72,
       contactInfo: { phone: "+880 1911-201177", email: "uttara@ember-oak.com" },
-      openingHours: "Daily 12:00–22:30",
+      hours: weeklyHours("12:00", "22:30"),
     },
     {
       restaurantId: restaurant._id,
@@ -131,7 +154,10 @@ async function seed() {
       address: { street: "1 CDA Avenue, GEC Circle", city: "Chattogram", state: "Chattogram", zip: "4000", country: "Bangladesh" },
       capacity: 56,
       contactInfo: { phone: "+880 1611-201192", email: "chattogram@ember-oak.com" },
-      openingHours: "Sat–Thu 17:00–23:00",
+      hours: weeklyHours("17:00", "23:00", [5]),
+      closures: [
+        { date: dayKeyToDate(addDaysToKey(todayKey(), 3)), reason: "Private event" },
+      ],
     },
   ]);
   console.log(`Created ${branchDocs.length} branches`);
@@ -264,7 +290,12 @@ async function seed() {
       const customer = pick(customers);
       const branch = pick(branchDocs);
       const guests = randomInt(1, 8);
-      const time = pick(TIMES);
+      // Chattogram GEC serves evenings only and closes on Fridays.
+      const eveningOnly = branch.name === "Chattogram GEC";
+      if (eveningOnly && date.getUTCDay() === 5) continue;
+      const time = pick(
+        eveningOnly ? DINNER_TIMES : [...LUNCH_TIMES, ...DINNER_TIMES]
+      );
 
       let status: string;
       let estimatedSpend: number | undefined;
@@ -387,6 +418,8 @@ async function seed() {
     ownerId: owner2._id,
     subscriptionPlan: "starter",
     cuisine: "Japanese",
+    isPublished: true,
+    bookingSettings: { autoApprove: true, maxPartySize: 8 },
   });
   owner2.restaurantId = restaurant2._id;
   await owner2.save();
@@ -397,7 +430,7 @@ async function seed() {
     address: { street: "House 76, Road 11, Banani", city: "Dhaka", state: "Dhaka", zip: "1213", country: "Bangladesh" },
     capacity: 38,
     contactInfo: { phone: "+880 1511-200260" },
-    openingHours: "Daily 17:30–23:00",
+    hours: weeklyHours("17:30", "23:00"),
   });
 
   await MenuItem.create([

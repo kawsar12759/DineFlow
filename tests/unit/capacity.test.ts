@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { peakGuests } from "@/lib/capacity";
+import { peakGuests } from "@/lib/seating";
 
 describe("peakGuests (90-minute seatings)", () => {
   it("is zero with no bookings", () => {

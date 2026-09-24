@@ -27,7 +27,56 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+// ---------- Restaurant settings ----------
+
+const time24 = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Invalid time (HH:MM)");
+
+export const restaurantProfileSchema = z.object({
+  name: z.string().min(2, "Restaurant name is required").max(100),
+  cuisine: z.string().max(60).optional().or(z.literal("")),
+  description: z.string().max(1000).optional().or(z.literal("")),
+  logo: z.string().url("Enter a valid image URL").optional().or(z.literal("")),
+  phone: z.string().max(30).optional().or(z.literal("")),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  website: z.string().url("Enter a valid URL").optional().or(z.literal("")),
+  isPublished: z.boolean().optional(),
+});
+
+export const bookingSettingsSchema = z.object({
+  diningDurationMinutes: z.coerce.number().int().min(30).max(300),
+  slotIntervalMinutes: z.coerce.number().int().min(15).max(60),
+  maxPartySize: z.coerce.number().int().min(1).max(50),
+  minLeadMinutes: z.coerce.number().int().min(0).max(10080),
+  maxDaysAhead: z.coerce.number().int().min(1).max(365),
+  autoApprove: z.boolean(),
+});
+
+export const settingsUpdateSchema = z.object({
+  profile: restaurantProfileSchema.partial().optional(),
+  bookingSettings: bookingSettingsSchema.partial().optional(),
+});
+
 // ---------- Branches ----------
+
+const openingHoursSchema = z
+  .array(
+    z.object({
+      day: z.coerce.number().int().min(0).max(6),
+      open: time24,
+      close: time24,
+      closed: z.boolean().default(false),
+    })
+  )
+  .length(7, "Provide hours for all seven days");
+
+const closuresSchema = z.array(
+  z.object({
+    date: dayKey,
+    reason: z.string().max(120).optional().or(z.literal("")),
+  })
+);
 
 export const branchSchema = z.object({
   name: z.string().min(2, "Branch name is required").max(100),
@@ -45,7 +94,8 @@ export const branchSchema = z.object({
       email: z.string().email("Invalid email").optional().or(z.literal("")),
     })
     .optional(),
-  openingHours: z.string().optional(),
+  hours: openingHoursSchema.optional(),
+  closures: closuresSchema.optional(),
   image: z.string().url().optional().or(z.literal("")),
   isActive: z.boolean().optional(),
 });
@@ -146,6 +196,24 @@ export const staffUpdateSchema = staffSchema
     isActive: z.boolean().optional(),
   });
 
+// ---------- Profile ----------
+
+export const profileUpdateSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters").max(80).optional(),
+    phone: z.string().max(30).optional().or(z.literal("")),
+    currentPassword: z.string().optional(),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .optional()
+      .or(z.literal("")),
+  })
+  .refine(
+    (value) => !value.newPassword || !!value.currentPassword,
+    { message: "Enter your current password", path: ["currentPassword"] }
+  );
+
 // ---------- Contact ----------
 
 export const contactSchema = z.object({
@@ -164,3 +232,6 @@ export type PublicReservationInput = z.infer<typeof publicReservationSchema>;
 export type CustomerInput = z.infer<typeof customerSchema>;
 export type StaffInput = z.infer<typeof staffSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
+export type RestaurantProfileInput = z.infer<typeof restaurantProfileSchema>;
+export type BookingSettingsInput = z.infer<typeof bookingSettingsSchema>;

@@ -18,6 +18,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { describeHours } from "@/lib/availability";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -151,11 +152,9 @@ export default function BranchesPage() {
                   <TableRow key={branch._id}>
                     <TableCell>
                       <div className="font-medium">{branch.name}</div>
-                      {branch.openingHours && (
-                        <div className="text-xs text-muted-foreground">
-                          {branch.openingHours}
-                        </div>
-                      )}
+                      <div className="text-xs text-muted-foreground">
+                        {describeHours(branch.hours) || "Hours not set"}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-1.5 text-muted-foreground">

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/db";
-import { MenuItem } from "@/models";
+import { MenuItem, Restaurant } from "@/models";
 import { handleApiError, paginated, parsePagination } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
 
@@ -13,7 +13,15 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search")?.trim();
     const category = searchParams.get("category");
 
-    const filter: Record<string, unknown> = { availability: true };
+    const published = await Restaurant.find({ isPublished: true })
+      .select("name slug")
+      .lean();
+    const restaurantMap = new Map(published.map((r) => [String(r._id), r]));
+
+    const filter: Record<string, unknown> = {
+      availability: true,
+      restaurantId: { $in: published.map((r) => r._id) },
+    };
     if (search) filter.name = { $regex: search, $options: "i" };
     if (category && category !== "all") filter.category = category;
 
@@ -40,7 +48,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return paginated(items, total, page, limit);
+    return paginated(
+      items.map((item) => ({
+        ...item,
+        restaurant: restaurantMap.get(String(item.restaurantId)) ?? null,
+      })),
+      total,
+      page,
+      limit
+    );
   } catch (error) {
     return handleApiError(error);
   }

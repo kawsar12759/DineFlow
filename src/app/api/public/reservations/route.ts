@@ -1,15 +1,14 @@
 import { NextRequest } from "next/server";
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { Branch, Customer, Reservation } from "@/models";
+import { Branch, Customer, Reservation, Restaurant } from "@/models";
 import { publicReservationSchema } from "@/lib/validations";
 import { ApiError, handleApiError, ok, parseBody } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
 import { claimSlotCapacity } from "@/lib/capacity";
-import { dayKeyToDate, slotInstant } from "@/lib/dates";
+import { dayKeyToDate } from "@/lib/dates";
+import { assertBookable, bookingSettings } from "@/lib/availability";
 import { enforceRateLimit } from "@/lib/rate-limit";
-
-const MAX_DAYS_AHEAD = 90;
 
 /**
  * Public booking endpoint used by the marketing site reservation form.
@@ -20,18 +19,6 @@ export async function POST(request: NextRequest) {
   try {
     enforceRateLimit(request, "public-reservation", 5, 10 * 60_000);
     const input = await parseBody(request, publicReservationSchema);
-
-    const slot = slotInstant(input.date, input.time);
-    const now = Date.now();
-    if (slot.getTime() <= now) {
-      throw new ApiError("Please choose a time in the future", 400);
-    }
-    if (slot.getTime() > now + MAX_DAYS_AHEAD * 24 * 60 * 60_000) {
-      throw new ApiError(
-        `Bookings open up to ${MAX_DAYS_AHEAD} days in advance`,
-        400
-      );
-    }
 
     await connectDB();
 
@@ -44,6 +31,22 @@ export async function POST(request: NextRequest) {
     if (!branch) throw new ApiError("Branch not found", 404);
 
     const restaurantId = branch.restaurantId;
+    const restaurant = await Restaurant.findById(restaurantId)
+      .select("bookingSettings isPublished")
+      .lean();
+    if (!restaurant?.isPublished) {
+      throw new ApiError("This restaurant is not taking online bookings", 404);
+    }
+    const settings = bookingSettings(restaurant.bookingSettings);
+
+    assertBookable({
+      branch,
+      branchName: branch.name,
+      dayKey: input.date,
+      time: input.time,
+      guests: input.guests,
+      settings,
+    });
 
     const customer = await Customer.findOneAndUpdate(
       { email: input.email.toLowerCase(), restaurantId },
@@ -65,10 +68,16 @@ export async function POST(request: NextRequest) {
       time: input.time,
       guests: input.guests,
       specialRequests: input.specialRequests,
-      status: "pending",
+      status: settings.autoApprove ? "approved" : "pending",
     });
 
-    if (!(await claimSlotCapacity(reservation, branch.capacity))) {
+    if (
+      !(await claimSlotCapacity(
+        reservation,
+        branch.capacity,
+        settings.diningDurationMinutes
+      ))
+    ) {
       throw new ApiError(
         "This time slot is fully booked — please choose another time",
         409

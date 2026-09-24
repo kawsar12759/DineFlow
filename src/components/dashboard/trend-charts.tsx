@@ -31,7 +31,9 @@ function formatAxisDate(value: string) {
 
 const tooltipStyle = {
   borderRadius: 8,
-  border: "1px solid hsl(220 14% 90%)",
+  border: "1px solid hsl(var(--border))",
+  background: "hsl(var(--popover))",
+  color: "hsl(var(--popover-foreground))",
   fontSize: 12,
   boxShadow: "0 4px 12px rgb(0 0 0 / 0.08)",
 };
@@ -46,7 +48,7 @@ export function ReservationTrendChart({ data }: { data: TrendPoint[] }) {
             <stop offset="100%" stopColor="hsl(161 84% 32%)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(220 14% 92%)" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
         <XAxis
           dataKey="date"
           tickFormatter={formatAxisDate}
@@ -90,7 +92,7 @@ export function RevenueTrendChart({ data }: { data: TrendPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(220 14% 92%)" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
         <XAxis
           dataKey="date"
           tickFormatter={formatAxisDate}
@@ -130,7 +132,7 @@ export function CustomerGrowthChart({ data }: { data: TrendPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(220 14% 92%)" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
         <XAxis
           dataKey="date"
           tickFormatter={formatAxisDate}

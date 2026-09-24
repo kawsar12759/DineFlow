@@ -1,4 +1,11 @@
 import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
+import { DEFAULT_OPENING_HOURS, type OpeningHour } from "@/lib/constants";
+
+export interface IClosure {
+  /** UTC midnight of the closed Dhaka day. */
+  date: Date;
+  reason?: string;
+}
 
 export interface IBranch extends Document {
   _id: Types.ObjectId;
@@ -16,7 +23,10 @@ export interface IBranch extends Document {
     phone?: string;
     email?: string;
   };
-  openingHours?: string;
+  /** Weekly schedule, one entry per weekday (0 = Sunday). */
+  hours: OpeningHour[];
+  /** One-off closures (holidays, private events). */
+  closures: IClosure[];
   image?: string;
   isActive: boolean;
   createdAt: Date;
@@ -44,7 +54,25 @@ const BranchSchema = new Schema<IBranch>(
       phone: { type: String, trim: true },
       email: { type: String, trim: true, lowercase: true },
     },
-    openingHours: { type: String, trim: true },
+    hours: {
+      type: [
+        {
+          _id: false,
+          day: { type: Number, required: true, min: 0, max: 6 },
+          open: { type: String, required: true },
+          close: { type: String, required: true },
+          closed: { type: Boolean, default: false },
+        },
+      ],
+      default: () => DEFAULT_OPENING_HOURS,
+    },
+    closures: [
+      {
+        _id: false,
+        date: { type: Date, required: true },
+        reason: { type: String, trim: true },
+      },
+    ],
     image: { type: String },
     isActive: { type: Boolean, default: true },
   },

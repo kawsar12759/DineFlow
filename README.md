@@ -10,9 +10,9 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 
 **Public site**
 - Marketing pages (home, features, pricing) with Framer Motion animations
-- Public branch directory with debounced search
-- Searchable, filterable public menu (tracks view events for analytics)
-- Capacity-aware public booking flow
+- A public page per restaurant at `/r/<slug>`: profile, locations with real opening hours, full menu, and booking
+- Live availability: guests only see slots inside opening hours that still have seats for their party size
+- Public branch directory and searchable menu across published restaurants
 
 **SaaS dashboard**
 - Overview: today's reservations, revenue, occupancy, customer growth + Recharts trend charts
@@ -21,6 +21,9 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - Reservation lifecycle: `pending → approved → seated → completed` with enforced status transitions; completing a reservation records a customer visit and revenue
 - Customer CRM: profiles, visit history, lifetime spend, tags
 - Staff management: scoped roles, branch/shift assignment, activate/deactivate
+- Settings: restaurant profile, publish/unpublish the public page, and booking rules (table hold time, slot interval, party size, lead time, how far ahead, auto-approve)
+- Weekly opening hours and holiday closures per branch; bookings are checked against both
+- Personal profile page with password change, and a light/dark theme toggle
 - Analytics: revenue, reservation, customer, branch, and menu popularity aggregations (server-side MongoDB pipelines)
 
 **Architecture**
@@ -98,6 +101,21 @@ await Branch.find({ ...filter, ...tenantFilter(ctx) }); // always scoped
 ```
 
 The public booking endpoint derives `restaurantId` from the selected branch document after validating it exists and is active.
+
+## Booking rules
+
+Each restaurant owns its rules (`Restaurant.bookingSettings`), applied in `src/lib/availability.ts`:
+
+| Rule | Meaning |
+| --- | --- |
+| `diningDurationMinutes` | How long a party holds its seats; drives overlap-aware capacity |
+| `slotIntervalMinutes` | Gap between bookable times |
+| `maxPartySize` | Largest party bookable online |
+| `minLeadMinutes` | How close to a slot a guest may still book |
+| `maxDaysAhead` | How far ahead bookings open |
+| `autoApprove` | Confirm online bookings instead of leaving them pending |
+
+Guests get every rule. Staff taking a phone booking skip the lead-time and how-far-ahead limits, but opening hours, closures and capacity still apply.
 
 ## Deployment
 

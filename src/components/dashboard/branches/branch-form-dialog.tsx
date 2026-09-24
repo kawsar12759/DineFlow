@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,7 +25,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BD_DIVISIONS, COUNTRY, PHONE_PLACEHOLDER } from "@/lib/constants";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BD_DIVISIONS,
+  COUNTRY,
+  DEFAULT_OPENING_HOURS,
+  PHONE_PLACEHOLDER,
+  type OpeningHour,
+} from "@/lib/constants";
+import { describeHours } from "@/lib/availability";
+import {
+  ClosuresEditor,
+  HoursEditor,
+  type ClosureValue,
+} from "@/components/dashboard/branches/hours-editor";
 
 const formSchema = z.object({
   name: z.string().min(2, "Branch name is required"),
@@ -36,7 +49,6 @@ const formSchema = z.object({
   capacity: z.coerce.number().int().min(1, "Capacity must be at least 1"),
   phone: z.string().optional(),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
-  openingHours: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -53,7 +65,8 @@ export interface BranchRecord {
   };
   capacity: number;
   contactInfo?: { phone?: string; email?: string };
-  openingHours?: string;
+  hours?: OpeningHour[];
+  closures?: { date: string; reason?: string }[];
   isActive: boolean;
   createdAt: string;
 }
@@ -71,6 +84,9 @@ export function BranchFormDialog({
 }: BranchFormDialogProps) {
   const queryClient = useQueryClient();
   const isEditing = !!branch;
+  const [hours, setHours] = useState<OpeningHour[]>(DEFAULT_OPENING_HOURS);
+  const [closures, setClosures] = useState<ClosureValue[]>([]);
+  const [tab, setTab] = useState("details");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -79,6 +95,22 @@ export function BranchFormDialog({
 
   useEffect(() => {
     if (open) {
+      setTab("details");
+      setHours(
+        branch?.hours?.length
+          ? DEFAULT_OPENING_HOURS.map(
+              (fallback) =>
+                branch.hours!.find((entry) => entry.day === fallback.day) ??
+                fallback
+            )
+          : DEFAULT_OPENING_HOURS
+      );
+      setClosures(
+        (branch?.closures ?? []).map((closure) => ({
+          date: String(closure.date).slice(0, 10),
+          reason: closure.reason,
+        }))
+      );
       form.reset(
         branch
           ? {
@@ -90,7 +122,6 @@ export function BranchFormDialog({
               capacity: branch.capacity,
               phone: branch.contactInfo?.phone ?? "",
               email: branch.contactInfo?.email ?? "",
-              openingHours: branch.openingHours ?? "",
             }
           : { capacity: 40 }
       );
@@ -113,7 +144,8 @@ export function BranchFormDialog({
           phone: values.phone || undefined,
           email: values.email || undefined,
         },
-        openingHours: values.openingHours || undefined,
+        hours,
+        closures,
       };
       return isEditing
         ? api.patch(`/api/branches/${branch._id}`, payload)
@@ -147,6 +179,20 @@ export function BranchFormDialog({
           className="space-y-4"
           onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
         >
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList className="w-full">
+              <TabsTrigger value="details" className="flex-1">
+                Details
+              </TabsTrigger>
+              <TabsTrigger value="hours" className="flex-1">
+                Opening hours
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent
+              value="details"
+              className="max-h-[60vh] space-y-4 overflow-y-auto pr-1 scrollbar-thin"
+            >
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="name">Branch name</Label>
@@ -249,14 +295,32 @@ export function BranchFormDialog({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="openingHours">Opening hours</Label>
-            <Input
-              id="openingHours"
-              placeholder="Sat–Thu 12:00–23:00"
-              {...form.register("openingHours")}
-            />
-          </div>
+            </TabsContent>
+
+            <TabsContent
+              value="hours"
+              className="max-h-[60vh] space-y-5 overflow-y-auto pr-1 scrollbar-thin"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Weekly hours</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {describeHours(hours)}
+                  </span>
+                </div>
+                <HoursEditor hours={hours} onChange={setHours} />
+                <p className="text-xs text-muted-foreground">
+                  Guests can book from opening until the last seating that still
+                  finishes before closing.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Closed dates</Label>
+                <ClosuresEditor closures={closures} onChange={setClosures} />
+              </div>
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter className="gap-2">
             <Button

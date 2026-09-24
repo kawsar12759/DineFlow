@@ -43,8 +43,48 @@ export const RESERVATION_TRANSITIONS: Record<ReservationStatus, ReservationStatu
   cancelled: [],
 };
 
-/** How long a party holds its seats, used for capacity checks. */
-export const DINING_DURATION_MINUTES = 90;
+/** Fallback booking rules; each restaurant can override them in Settings. */
+export const DEFAULT_BOOKING_SETTINGS = {
+  /** How long a party holds its seats. */
+  diningDurationMinutes: 90,
+  /** Gap between bookable times. */
+  slotIntervalMinutes: 30,
+  maxPartySize: 20,
+  /** How soon before a slot a guest may still book it. */
+  minLeadMinutes: 60,
+  maxDaysAhead: 60,
+  /** Confirm public bookings automatically instead of leaving them pending. */
+  autoApprove: false,
+} as const;
+
+export type BookingSettings = {
+  -readonly [K in keyof typeof DEFAULT_BOOKING_SETTINGS]: typeof DEFAULT_BOOKING_SETTINGS[K] extends boolean
+    ? boolean
+    : number;
+};
+
+export const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;
+
+export interface OpeningHour {
+  /** 0 = Sunday. */
+  day: number;
+  open: string;
+  close: string;
+  closed: boolean;
+}
+
+/** Open every day 12:00-23:00 — the common pattern for Dhaka restaurants. */
+export const DEFAULT_OPENING_HOURS: OpeningHour[] = DAYS_OF_WEEK.map(
+  (_, day) => ({ day, open: "12:00", close: "23:00", closed: false })
+);
 
 export const RESERVATION_STATUS_META: Record<
   ReservationStatus,

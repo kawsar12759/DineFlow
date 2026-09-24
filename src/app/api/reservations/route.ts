@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { Branch, Customer, Reservation } from "@/models";
+import { Branch, Customer, Reservation, Restaurant } from "@/models";
 import { reservationSchema } from "@/lib/validations";
 import {
   ApiError,
@@ -17,6 +17,7 @@ import {
 import { trackEvent } from "@/lib/analytics";
 import { claimSlotCapacity } from "@/lib/capacity";
 import { dayKeyToDate, isDayKey } from "@/lib/dates";
+import { assertBookable, bookingSettings } from "@/lib/availability";
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,6 +71,21 @@ export async function POST(request: NextRequest) {
     }).lean();
     if (!branch) throw new ApiError("Branch not found", 404);
 
+    const restaurant = await Restaurant.findById(ctx.restaurantId)
+      .select("bookingSettings")
+      .lean();
+    const settings = bookingSettings(restaurant?.bookingSettings);
+
+    assertBookable({
+      branch,
+      branchName: branch.name,
+      dayKey: input.date,
+      time: input.time,
+      guests: input.guests,
+      settings,
+      mode: "staff",
+    });
+
     let customerId;
     if (input.customerId) {
       const customer = await Customer.findOne({
@@ -113,7 +129,13 @@ export async function POST(request: NextRequest) {
       status: "pending",
     });
 
-    if (!(await claimSlotCapacity(reservation, branch.capacity))) {
+    if (
+      !(await claimSlotCapacity(
+        reservation,
+        branch.capacity,
+        settings.diningDurationMinutes
+      ))
+    ) {
       throw new ApiError(
         `${branch.name} is fully booked around ${input.time} — choose another time`,
         409

@@ -20,7 +20,7 @@ interface PublicBranch {
   capacity: number;
   contactInfo?: { phone?: string; email?: string };
   openingHours?: string;
-  restaurant?: { name: string; cuisine?: string } | null;
+  restaurant?: { name: string; slug: string; cuisine?: string } | null;
 }
 
 export default function BranchDirectoryPage() {
@@ -125,7 +125,7 @@ export default function BranchDirectoryPage() {
                     </p>
                   </div>
                   <Button className="mt-5 w-full" asChild>
-                    <Link href={`/reserve?branch=${branch._id}`}>Book a table</Link>
+                    <Link href={`/r/${branch.restaurant?.slug ?? ""}`}>Book a table</Link>
                   </Button>
                 </CardContent>
               </Card>

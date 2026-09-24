@@ -26,7 +26,9 @@ const CHART_COLORS = [
 
 const tooltipStyle = {
   borderRadius: 8,
-  border: "1px solid hsl(220 14% 90%)",
+  border: "1px solid hsl(var(--border))",
+  background: "hsl(var(--popover))",
+  color: "hsl(var(--popover-foreground))",
   fontSize: 12,
   boxShadow: "0 4px 12px rgb(0 0 0 / 0.08)",
 };
@@ -51,7 +53,7 @@ export function BranchRevenueChart({ data }: { data: BranchPerformance[] }) {
         layout="vertical"
         margin={{ top: 8, right: 16, bottom: 0, left: 24 }}
       >
-        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(220 14% 92%)" />
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
         <XAxis
           type="number"
           tick={{ fontSize: 11 }}

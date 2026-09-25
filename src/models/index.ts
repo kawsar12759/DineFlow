@@ -8,3 +8,10 @@ export { AnalyticsEvent, type IAnalyticsEvent } from "./AnalyticsEvent";
 export { ContactMessage, type IContactMessage } from "./ContactMessage";
 export { Table, type ITable } from "./Table";
 export { WaitlistEntry, WAITLIST_STATUSES, type IWaitlistEntry, type WaitlistStatus } from "./WaitlistEntry";
+export {
+  Notification,
+  NOTIFICATION_TYPES,
+  type INotification,
+  type NotificationType,
+} from "./Notification";
+export { ActivityLog, type IActivityLog } from "./ActivityLog";

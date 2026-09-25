@@ -11,6 +11,9 @@ import { dayKeyToDate } from "@/lib/dates";
 import { assertBookable, bookingSettings } from "@/lib/availability";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { bookingManageUrl } from "@/lib/booking-token";
+import { sendBookingReceived } from "@/lib/email/booking-emails";
+import { notifyTeam, recordActivity } from "@/lib/activity";
+import { formatTime } from "@/lib/utils";
 
 /**
  * Public booking endpoint used by the marketing site reservation form.
@@ -102,6 +105,26 @@ export async function POST(request: NextRequest) {
         409
       );
     }
+
+    const confirmed = reservation.status === "approved";
+    await sendBookingReceived(reservation, confirmed, request.nextUrl.origin);
+    await notifyTeam({
+      restaurantId,
+      branchId: branch._id,
+      type: "reservation_created",
+      title: `New booking · ${branch.name}`,
+      body: `${input.name} · ${input.guests} ${input.guests === 1 ? "guest" : "guests"} · ${formatTime(input.time)}${confirmed ? "" : " · needs approval"}`,
+      link: "/dashboard/reservations?status=pending",
+    });
+    await recordActivity({
+      restaurantId,
+      branchId: branch._id,
+      actorName: input.name,
+      action: "reservation.created",
+      targetType: "reservation",
+      targetId: reservation._id,
+      summary: `${input.name} booked ${input.guests} for ${formatTime(input.time)} at ${branch.name} (online)`,
+    });
 
     await trackEvent(restaurantId, "reservation_created", {
       reservationId: reservation._id.toString(),

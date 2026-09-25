@@ -13,6 +13,7 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - A public page per restaurant at `/r/<slug>`: profile, locations with real opening hours, full menu, and booking
 - Live availability: guests only see slots inside opening hours where a table actually fits their party
 - Guests manage their own booking from a signed link: view, change the time or cancel, no account needed
+- Emails for every step: booking received, confirmed, cancelled, and a reminder the day before
 - Public branch directory and searchable menu across published restaurants
 
 **SaaS dashboard**
@@ -26,6 +27,9 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - Weekly opening hours and holiday closures per branch; bookings are checked against both
 - Tables per branch (seats, zone), and a Floor view: a day timeline of tables against time where bookings can be dragged to another table, approved, seated, completed or marked no-show
 - Walk-ins and a waitlist: seat a party straight away, or hold them and seat them when a table frees up
+- Notification bell for new bookings, cancellations and waiting parties
+- Activity log: who approved, moved, seated or cancelled what
+- Invite staff by email so they set their own password, plus a forgotten-password flow
 - Personal profile page with password change, and a light/dark theme toggle
 - Analytics: revenue, reservation, customer, branch, and menu popularity aggregations (server-side MongoDB pipelines)
 
@@ -108,6 +112,12 @@ The public booking endpoint derives `restaurantId` from the selected branch docu
 ## Seating
 
 A branch with tables seats every booking on real tables: the smallest table that fits, or several joined within one zone for a large party. Availability, walk-ins and reschedules all go through the same fit check, and two bookings racing for the last table resolve so exactly one keeps it. A branch with no tables falls back to total seat capacity, so tables are optional.
+
+## Email
+
+Transactional email goes through Resend. Set `RESEND_API_KEY` and `EMAIL_FROM` (a verified sender) to send for real; without them every message is logged to the console, so development and tests need no credentials. Sending never throws — a failed email cannot fail the booking that triggered it.
+
+Reminders are sent by `GET /api/cron/reminders`, which needs `CRON_SECRET` as a bearer token and emails each guest booked for the next day exactly once. `vercel.json` schedules it daily at 10:00 Dhaka time; any scheduler that can call a URL works just as well.
 
 ## Booking rules
 

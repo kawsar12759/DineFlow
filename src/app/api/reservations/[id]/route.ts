@@ -13,6 +13,12 @@ import {
   tenantFilter,
 } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
+import { recordActivity } from "@/lib/activity";
+import {
+  sendBookingApproved,
+  sendBookingCancelled,
+} from "@/lib/email/booking-emails";
+import { formatTime } from "@/lib/utils";
 import {
   ACTIVE_RESERVATION_STATUSES,
   RESERVATION_TRANSITIONS,
@@ -264,6 +270,52 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         from: previousStatus,
         to: reservation.status,
         by: ctx.userId,
+      });
+
+      // Tell the guest when the answer affects them.
+      if (reservation.status === "approved") {
+        await sendBookingApproved(reservation, request.nextUrl.origin);
+      } else if (
+        reservation.status === "rejected" ||
+        reservation.status === "cancelled"
+      ) {
+        await sendBookingCancelled(
+          reservation,
+          reservation.status,
+          request.nextUrl.origin
+        );
+      }
+
+      await recordActivity({
+        restaurantId: ctx.restaurantId,
+        branchId: reservation.branchId,
+        actorId: ctx.userId,
+        action: `reservation.${reservation.status}`,
+        targetType: "reservation",
+        targetId: reservation._id,
+        summary: `Marked the ${formatTime(reservation.time)} booking at ${branch.name} as ${reservation.status.replace("_", "-")}`,
+      });
+    }
+
+    if (rescheduling) {
+      await recordActivity({
+        restaurantId: ctx.restaurantId,
+        branchId: reservation.branchId,
+        actorId: ctx.userId,
+        action: "reservation.rescheduled",
+        targetType: "reservation",
+        targetId: reservation._id,
+        summary: `Moved a booking to ${formatTime(reservation.time)} for ${reservation.guests} at ${branch.name}`,
+      });
+    } else if (input.tableIds !== undefined) {
+      await recordActivity({
+        restaurantId: ctx.restaurantId,
+        branchId: reservation.branchId,
+        actorId: ctx.userId,
+        action: "reservation.moved",
+        targetType: "reservation",
+        targetId: reservation._id,
+        summary: `Moved the ${formatTime(reservation.time)} booking to another table at ${branch.name}`,
       });
     }
 

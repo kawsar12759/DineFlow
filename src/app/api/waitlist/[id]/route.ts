@@ -24,6 +24,8 @@ import { assignTables, claimTables } from "@/lib/table-assignment";
 import { claimSlotCapacity } from "@/lib/capacity";
 import { currentTime } from "@/lib/dates";
 import { trackEvent } from "@/lib/analytics";
+import { recordActivity } from "@/lib/activity";
+import { formatTime } from "@/lib/utils";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -99,6 +101,17 @@ async function seatEntry(
   entry.reservationId = reservation._id;
   entry.seatedAt = new Date();
   await entry.save();
+
+  await recordActivity({
+    restaurantId: ctx.restaurantId,
+    branchId: branch._id,
+    actorId: ctx.userId,
+    action: "waitlist.seated",
+    targetType: "waitlist",
+    targetId: entry._id,
+    summary: `Seated ${entry.name} (${entry.guests}) at ${formatTime(time)} from the waitlist`,
+  });
+
 
   return { entry: entry.toObject(), reservationId: reservation._id.toString() };
 }

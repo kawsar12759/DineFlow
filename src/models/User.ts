@@ -13,6 +13,10 @@ export interface IUser extends Document {
   position?: string;
   phone?: string;
   isActive: boolean;
+  /** SHA-256 of the current invite/reset link, never the link itself. */
+  passwordTokenHash?: string;
+  passwordTokenExpires?: Date;
+  passwordTokenPurpose?: "invite" | "reset";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +39,13 @@ const UserSchema = new Schema<IUser>(
     position: { type: String, trim: true },
     phone: { type: String, trim: true },
     isActive: { type: Boolean, default: true },
+    passwordTokenHash: { type: String, select: false, index: true },
+    passwordTokenExpires: { type: Date, select: false },
+    passwordTokenPurpose: {
+      type: String,
+      enum: ["invite", "reset"],
+      select: false,
+    },
   },
   { timestamps: true }
 );

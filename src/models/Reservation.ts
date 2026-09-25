@@ -14,6 +14,8 @@ export interface IReservation extends Document {
   status: ReservationStatus;
   specialRequests?: string;
   estimatedSpend?: number;
+  /** Set once the reminder email has gone out, so it is sent only once. */
+  reminderSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +52,7 @@ const ReservationSchema = new Schema<IReservation>(
     },
     specialRequests: { type: String, trim: true },
     estimatedSpend: { type: Number, min: 0 },
+    reminderSentAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -8,6 +8,7 @@ import {
   CalendarCheck,
   ChefHat,
   Grid2x2,
+  History,
   LayoutDashboard,
   MoreHorizontal,
   Settings,
@@ -85,6 +86,12 @@ const navItems: NavItem[] = [
     href: "/dashboard/analytics",
     label: "Analytics",
     icon: BarChart3,
+    roles: ["super_admin", "owner", "manager"],
+  },
+  {
+    href: "/dashboard/activity",
+    label: "Activity",
+    icon: History,
     roles: ["super_admin", "owner", "manager"],
   },
   {

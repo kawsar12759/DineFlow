@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { getInitials } from "@/lib/utils";
 import type { Role } from "@/lib/constants";
 
@@ -48,6 +49,7 @@ export function Topbar({ userName, userEmail, role, restaurantName }: TopbarProp
         <Badge variant="secondary" className="hidden sm:inline-flex">
           {roleLabels[role]}
         </Badge>
+        <NotificationBell />
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger className="rounded-full outline-none ring-ring focus-visible:ring-2">

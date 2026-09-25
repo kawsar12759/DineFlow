@@ -9,6 +9,7 @@ import {
   requireTenantSession,
 } from "@/lib/api-helpers";
 import { bookingSettings } from "@/lib/availability";
+import { recordActivity } from "@/lib/activity";
 
 /** Restaurant profile + booking rules. Readable by any dashboard user. */
 export async function GET() {
@@ -51,6 +52,15 @@ export async function PATCH(request: NextRequest) {
     ).lean();
 
     if (!restaurant) throw new ApiError("Restaurant not found", 404);
+
+    await recordActivity({
+      restaurantId: ctx.restaurantId,
+      actorId: ctx.userId,
+      action: "settings.updated",
+      targetType: "restaurant",
+      targetId: restaurant._id,
+      summary: `Updated ${input.bookingSettings ? "booking rules" : "the restaurant profile"}`,
+    });
 
     return ok({
       ...restaurant,

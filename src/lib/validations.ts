@@ -253,7 +253,12 @@ export const visitSchema = z.object({
 export const staffSchema = z.object({
   name: z.string().min(2, "Name is required").max(80),
   email: z.string().email("Invalid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  /** Omit to email an invite instead of setting a password yourself. */
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .optional()
+    .or(z.literal("")),
   role: z.enum(["manager", "staff"]),
   branchId: objectId.optional().or(z.literal("")),
   shift: z.enum(STAFF_SHIFTS).optional(),

@@ -10,6 +10,8 @@ import { claimSlotCapacity } from "@/lib/capacity";
 import { dateToDayKey, dayKeyToDate } from "@/lib/dates";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { trackEvent } from "@/lib/analytics";
+import { notifyTeam, recordActivity } from "@/lib/activity";
+import { formatTime } from "@/lib/utils";
 
 type RouteParams = { params: Promise<{ token: string }> };
 
@@ -94,6 +96,22 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         to: "cancelled",
         by: "guest",
       });
+      await notifyTeam({
+        restaurantId: reservation.restaurantId,
+        branchId: reservation.branchId,
+        type: "reservation_cancelled",
+        title: `Booking cancelled · ${branch.name}`,
+        body: `${formatTime(reservation.time)} · ${reservation.guests} ${reservation.guests === 1 ? "guest" : "guests"} · cancelled by the guest`,
+        link: "/dashboard/reservations",
+      });
+      await recordActivity({
+        restaurantId: reservation.restaurantId,
+        branchId: reservation.branchId,
+        action: "reservation.cancelled",
+        targetType: "reservation",
+        targetId: reservation._id,
+        summary: `Guest cancelled the ${formatTime(reservation.time)} booking at ${branch.name}`,
+      });
 
       return ok({ status: reservation.status });
     }
@@ -143,6 +161,23 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!claimed) {
       throw new ApiError("That time was just taken — please pick another", 409);
     }
+
+    await notifyTeam({
+      restaurantId: reservation.restaurantId,
+      branchId: reservation.branchId,
+      type: "reservation_changed",
+      title: `Booking changed · ${branch.name}`,
+      body: `Now ${formatTime(reservation.time)} for ${reservation.guests} ${reservation.guests === 1 ? "guest" : "guests"}`,
+      link: "/dashboard/reservations",
+    });
+    await recordActivity({
+      restaurantId: reservation.restaurantId,
+      branchId: reservation.branchId,
+      action: "reservation.rescheduled",
+      targetType: "reservation",
+      targetId: reservation._id,
+      summary: `Guest moved their booking to ${formatTime(reservation.time)} for ${reservation.guests}`,
+    });
 
     return ok({
       date: dateToDayKey(reservation.date),

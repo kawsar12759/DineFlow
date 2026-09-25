@@ -13,6 +13,7 @@ import {
   tenantFilter,
 } from "@/lib/api-helpers";
 import { dayKeyToDate, isDayKey, todayKey } from "@/lib/dates";
+import { notifyTeam, recordActivity } from "@/lib/activity";
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,6 +67,24 @@ export async function POST(request: NextRequest) {
       guests: input.guests,
       quotedMinutes: input.quotedMinutes,
       notes: input.notes || undefined,
+    });
+
+    await notifyTeam({
+      restaurantId: ctx.restaurantId,
+      branchId: branch._id,
+      type: "waitlist_added",
+      title: `Waiting for a table · ${branch.name}`,
+      body: `${input.name} · ${input.guests} ${input.guests === 1 ? "guest" : "guests"}`,
+      link: "/dashboard/floor",
+    });
+    await recordActivity({
+      restaurantId: ctx.restaurantId,
+      branchId: branch._id,
+      actorId: ctx.userId,
+      action: "waitlist.added",
+      targetType: "waitlist",
+      targetId: entry._id,
+      summary: `Added ${input.name} (${input.guests}) to the waitlist at ${branch.name}`,
     });
 
     return ok(entry, { status: 201 });

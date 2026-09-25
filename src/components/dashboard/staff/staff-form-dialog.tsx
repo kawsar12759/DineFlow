@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -68,6 +69,7 @@ export function StaffFormDialog({
 }: StaffFormDialogProps) {
   const queryClient = useQueryClient();
   const isEditing = !!member;
+  const [invite, setInvite] = useState(true);
 
   const { data: branchData } = useQuery({
     queryKey: ["branches", "", 1],
@@ -87,6 +89,7 @@ export function StaffFormDialog({
         member && member.branchId && typeof member.branchId === "object"
           ? member.branchId._id
           : (member?.branchId as string | undefined);
+      setInvite(true);
       form.reset(
         member
           ? {
@@ -106,7 +109,8 @@ export function StaffFormDialog({
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) => {
-      if (!isEditing && (!values.password || values.password.length < 8)) {
+      // New members are invited by email unless a password is typed here.
+      if (!isEditing && !invite && (values.password ?? "").length < 8) {
         throw new ApiClientError("Password must be at least 8 characters", 422);
       }
       const payload = {
@@ -122,10 +126,19 @@ export function StaffFormDialog({
       };
       return isEditing
         ? api.patch(`/api/staff/${member._id}`, payload)
-        : api.post("/api/staff", { ...payload, password: values.password });
+        : api.post("/api/staff", {
+            ...payload,
+            ...(invite ? {} : { password: values.password }),
+          });
     },
     onSuccess: () => {
-      toast.success(isEditing ? "Staff member updated" : "Staff member added");
+      toast.success(
+        isEditing
+          ? "Staff member updated"
+          : invite
+            ? "Invite sent"
+            : "Staff member added"
+      );
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       onOpenChange(false);
     },
@@ -181,17 +194,43 @@ export function StaffFormDialog({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="password">
-              {isEditing ? "New password (leave blank to keep)" : "Password"}
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="At least 8 characters"
-              {...form.register("password")}
-            />
-          </div>
+          {isEditing ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="password">New password (leave blank to keep)</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="At least 8 characters"
+                {...form.register("password")}
+              />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <Label htmlFor="invite">Email an invite</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {invite
+                      ? "They set their own password from a link that expires in 72 hours."
+                      : "You choose the password and share it yourself."}
+                  </p>
+                </div>
+                <Switch id="invite" checked={invite} onCheckedChange={setInvite} />
+              </div>
+
+              {!invite && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="At least 8 characters"
+                    {...form.register("password")}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">

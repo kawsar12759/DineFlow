@@ -1,7 +1,9 @@
 import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
 import {
+  DEFAULT_BILLING_SETTINGS,
   DEFAULT_BOOKING_SETTINGS,
   SUBSCRIPTION_PLANS,
+  type BillingSettings,
   type BookingSettings,
   type SubscriptionPlan,
 } from "@/lib/constants";
@@ -21,6 +23,7 @@ export interface IRestaurant extends Document {
   /** Show the public storefront at /r/<slug>. */
   isPublished: boolean;
   bookingSettings: BookingSettings;
+  billingSettings: BillingSettings;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,6 +84,20 @@ const RestaurantSchema = new Schema<IRestaurant>(
       autoApprove: {
         type: Boolean,
         default: DEFAULT_BOOKING_SETTINGS.autoApprove,
+      },
+    },
+    billingSettings: {
+      vatPercent: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: DEFAULT_BILLING_SETTINGS.vatPercent,
+      },
+      serviceChargePercent: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: DEFAULT_BILLING_SETTINGS.serviceChargePercent,
       },
     },
   },

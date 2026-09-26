@@ -30,6 +30,9 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - Notification bell for new bookings, cancellations and waiting parties
 - Activity log: who approved, moved, seated or cancelled what
 - Invite staff by email so they set their own password, plus a forgotten-password flow
+- Orders: open a ticket for a seated booking or a table, add dishes at today's prices, send them to the kitchen, and close the bill
+- Kitchen screen: tickets as they are sent, moved through cooking → ready → served, with a timer that turns red after 20 minutes
+- Bills in BDT with service charge, VAT and discounts; paid by cash, card, bKash, Nagad or Rocket, with change worked out for you
 - Personal profile page with password change, and a light/dark theme toggle
 - Analytics: revenue, reservation, customer, branch, and menu popularity aggregations (server-side MongoDB pipelines)
 
@@ -118,6 +121,12 @@ A branch with tables seats every booking on real tables: the smallest table that
 Transactional email goes through Resend. Set `RESEND_API_KEY` and `EMAIL_FROM` (a verified sender) to send for real; without them every message is logged to the console, so development and tests need no credentials. Sending never throws — a failed email cannot fail the booking that triggered it.
 
 Reminders are sent by `GET /api/cron/reminders`, which needs `CRON_SECRET` as a bearer token and emails each guest booked for the next day exactly once. `vercel.json` schedules it daily at 10:00 Dhaka time; any scheduler that can call a URL works just as well.
+
+## Money
+
+Revenue comes from paid orders. A paid bill records the total, completes its booking and adds the real spend to the guest's history; `Reservation.orderId` marks bookings already billed, so a completed booking without an order still counts through its estimated spend and nothing is counted twice.
+
+Bills are `subtotal − discount`, then service charge and VAT on that amount, both configurable per restaurant in Settings (Bangladeshi defaults: 5% VAT, 10% service). Prices and dish names are copied onto the ticket when ordered, so changing the menu later never rewrites an old bill.
 
 ## Booking rules
 

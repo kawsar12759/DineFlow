@@ -21,7 +21,9 @@ import {
   Customer,
   AnalyticsEvent,
   Table,
+  Order,
 } from "../src/models";
+import { computeBill } from "../src/lib/billing";
 import { freeTablesAt, pickTables, type TableLike } from "../src/lib/tables";
 import { addDaysToKey, dayKeyToDate, todayKey } from "../src/lib/dates";
 import { DAYS_OF_WEEK } from "../src/lib/constants";
@@ -89,6 +91,7 @@ async function seed() {
     Customer.deleteMany({}),
     AnalyticsEvent.deleteMany({}),
     Table.deleteMany({}),
+    Order.deleteMany({}),
   ]);
   console.log("Cleared existing collections");
 
@@ -315,6 +318,10 @@ async function seed() {
   const reservations: Record<string, unknown>[] = [];
   const events: Record<string, unknown>[] = [];
   const bookingsByBranchDay = new Map<string, { time: string; tableIds: string[] }[]>();
+  const orders: Record<string, unknown>[] = [];
+  const orderCounters = new Map<string, number>();
+  const VAT_PERCENT = 5;
+  const SERVICE_PERCENT = 10;
   const customerStats = new Map<
     string,
     { visits: { date: Date; branchId: Types.ObjectId; spend: number; guests: number }[]; spend: number }
@@ -382,7 +389,9 @@ async function seed() {
       const createdAt = new Date(date);
       createdAt.setUTCDate(createdAt.getUTCDate() - randomInt(1, 6));
 
+      const reservationId = new Types.ObjectId();
       reservations.push({
+        _id: reservationId,
         restaurantId: restaurant._id,
         branchId: branch._id,
         customerId: customer._id,
@@ -414,15 +423,75 @@ async function seed() {
       });
 
       if (status === "completed" && estimatedSpend) {
+        // A completed visit has a paid bill behind it, built from real dishes.
+        const lines: { name: string; unitPrice: number; quantity: number }[] = [];
+        let spent = 0;
+        while (spent < estimatedSpend && lines.length < 8) {
+          const dish = pick(menuItems);
+          const quantity = randomInt(1, 2);
+          lines.push({ name: dish.name, unitPrice: dish.price, quantity });
+          spent += dish.price * quantity;
+        }
+
+        const totals = computeBill(lines, {
+          vatPercent: VAT_PERCENT,
+          serviceChargePercent: SERVICE_PERCENT,
+        });
+        // dayKey is already "<branchId>|<date>", so it numbers per branch per day.
+        const orderNumber = (orderCounters.get(dayKey) ?? 0) + 1;
+        orderCounters.set(dayKey, orderNumber);
+
+        const orderId = new Types.ObjectId();
+        orders.push({
+          _id: orderId,
+          restaurantId: restaurant._id,
+          branchId: branch._id,
+          orderNumber,
+          serviceDate: date,
+          reservationId,
+          customerId: customer._id,
+          tableIds,
+          guests,
+          items: lines.map((line) => ({
+            _id: new Types.ObjectId(),
+            name: line.name,
+            unitPrice: line.unitPrice,
+            quantity: line.quantity,
+            status: "served",
+            voided: false,
+            sentAt: date,
+            readyAt: date,
+          })),
+          status: "paid",
+          discountAmount: 0,
+          vatPercent: VAT_PERCENT,
+          serviceChargePercent: SERVICE_PERCENT,
+          subtotal: totals.subtotal,
+          vatAmount: totals.vatAmount,
+          serviceChargeAmount: totals.serviceChargeAmount,
+          total: totals.total,
+          payment: {
+            method: pick(["cash", "card", "bkash", "nagad"]),
+            amount: totals.total,
+            paidAt: date,
+          },
+          createdAt: date,
+          updatedAt: date,
+        });
+
+        // The reservation's spend is what was actually paid.
+        reservations[reservations.length - 1].estimatedSpend = totals.total;
+        reservations[reservations.length - 1].orderId = orderId;
+
         const stats = customerStats.get(customer._id.toString()) ?? { visits: [], spend: 0 };
-        stats.visits.push({ date, branchId: branch._id, spend: estimatedSpend, guests });
-        stats.spend += estimatedSpend;
+        stats.visits.push({ date, branchId: branch._id, spend: totals.total, guests });
+        stats.spend += totals.total;
         customerStats.set(customer._id.toString(), stats);
 
         events.push({
           restaurantId: restaurant._id,
           type: "revenue_recorded",
-          metadata: { branchId: branch._id.toString(), amount: estimatedSpend },
+          metadata: { branchId: branch._id.toString(), amount: totals.total },
           createdAt: date,
         });
       }
@@ -431,6 +500,9 @@ async function seed() {
 
   await Reservation.insertMany(reservations);
   console.log(`Created ${reservations.length} reservations`);
+
+  await Order.insertMany(orders);
+  console.log(`Created ${orders.length} paid orders`);
 
   // Apply visit history to customers
   for (const [customerId, stats] of customerStats) {

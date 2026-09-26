@@ -59,6 +59,17 @@ export const DEFAULT_BOOKING_SETTINGS = {
   autoApprove: false,
 } as const;
 
+/** Bill defaults; Bangladeshi restaurants usually charge 5% VAT and 10% service. */
+export const DEFAULT_BILLING_SETTINGS = {
+  vatPercent: 5,
+  serviceChargePercent: 10,
+} as const;
+
+export type BillingSettings = {
+  vatPercent: number;
+  serviceChargePercent: number;
+};
+
 export type BookingSettings = {
   -readonly [K in keyof typeof DEFAULT_BOOKING_SETTINGS]: typeof DEFAULT_BOOKING_SETTINGS[K] extends boolean
     ? boolean

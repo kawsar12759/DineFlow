@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { Branch, Reservation } from "@/models";
 import { handleApiError, ok, requireTenantSession } from "@/lib/api-helpers";
 import { addDaysToKey, dayKeyToDate, todayKey } from "@/lib/dates";
+import { revenueByBranch } from "@/lib/revenue";
 
 /** Per-branch performance: reservations, revenue, covers, utilization. */
 export async function GET() {
@@ -14,7 +15,7 @@ export async function GET() {
     const since = dayKeyToDate(addDaysToKey(today, -29));
     const until = dayKeyToDate(addDaysToKey(today, 1));
 
-    const [branches, performance] = await Promise.all([
+    const [branches, performance, revenueByBranchMap] = await Promise.all([
       Branch.find({ restaurantId }).lean(),
       Reservation.aggregate([
         { $match: { restaurantId, date: { $gte: since, $lt: until } } },
@@ -24,15 +25,6 @@ export async function GET() {
             reservations: { $sum: 1 },
             completed: {
               $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
-            },
-            revenue: {
-              $sum: {
-                $cond: [
-                  { $eq: ["$status", "completed"] },
-                  { $ifNull: ["$estimatedSpend", 0] },
-                  0,
-                ],
-              },
             },
             covers: {
               $sum: {
@@ -46,6 +38,7 @@ export async function GET() {
           },
         },
       ]),
+      revenueByBranch({ restaurantId, from: since, to: until }),
     ]);
 
     const perfMap = new Map(performance.map((p) => [String(p._id), p]));
@@ -60,7 +53,7 @@ export async function GET() {
         isActive: branch.isActive,
         reservations: perf?.reservations ?? 0,
         completed: perf?.completed ?? 0,
-        revenue: perf?.revenue ?? 0,
+        revenue: revenueByBranchMap.get(String(branch._id)) ?? 0,
         covers: perf?.covers ?? 0,
         // covers over the period vs theoretical capacity (capacity × 30 days)
         utilization:

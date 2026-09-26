@@ -8,6 +8,7 @@ import {
   requireTenantSession,
 } from "@/lib/api-helpers";
 import { TIMEZONE } from "@/lib/constants";
+import { revenueByDay } from "@/lib/revenue";
 import {
   addDaysToKey,
   dayKeyToDate,
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       $dateToString: { format: "%Y-%m-%d", date: "$date" },
     };
 
-    const [reservationSeries, revenueSeries, customerSeries] =
+    const [reservationSeries, revenueByDayMap, customerSeries] =
       await Promise.all([
         Reservation.aggregate([
           { $match: { restaurantId, ...scope, date: { $gte: since, $lt: until } } },
@@ -61,28 +62,27 @@ export async function GET(request: NextRequest) {
                   ],
                 },
               },
+              covers: {
+                $sum: {
+                  $cond: [
+                    { $in: ["$status", ["completed", "seated"]] },
+                    "$guests",
+                    0,
+                  ],
+                },
+              },
             },
           },
           { $sort: { _id: 1 } },
         ]),
-        Reservation.aggregate([
-          {
-            $match: {
-              restaurantId,
-              ...scope,
-              status: "completed",
-              date: { $gte: since, $lt: until },
-            },
-          },
-          {
-            $group: {
-              _id: dateGroup,
-              revenue: { $sum: "$estimatedSpend" },
-              covers: { $sum: "$guests" },
-            },
-          },
-          { $sort: { _id: 1 } },
-        ]),
+        revenueByDay({
+          restaurantId,
+          from: since,
+          to: until,
+          branchId: ctx.branchScope
+            ? new Types.ObjectId(ctx.branchScope)
+            : undefined,
+        }),
         Customer.aggregate([
           { $match: { restaurantId, createdAt: { $gte: dayStartInstant(sinceKey) } } },
           {
@@ -113,7 +113,6 @@ export async function GET(request: NextRequest) {
     }[] = [];
 
     const reservationMap = new Map(reservationSeries.map((r) => [r._id, r]));
-    const revenueMap = new Map(revenueSeries.map((r) => [r._id, r]));
     const customerMap = new Map(customerSeries.map((r) => [r._id, r]));
 
     for (let i = 0; i < days; i++) {
@@ -123,8 +122,8 @@ export async function GET(request: NextRequest) {
         reservations: reservationMap.get(key)?.total ?? 0,
         completed: reservationMap.get(key)?.completed ?? 0,
         cancelled: reservationMap.get(key)?.cancelled ?? 0,
-        revenue: revenueMap.get(key)?.revenue ?? 0,
-        covers: revenueMap.get(key)?.covers ?? 0,
+        revenue: revenueByDayMap.get(key) ?? 0,
+        covers: reservationMap.get(key)?.covers ?? 0,
         newCustomers: customerMap.get(key)?.newCustomers ?? 0,
       });
     }

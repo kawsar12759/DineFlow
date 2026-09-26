@@ -8,7 +8,7 @@ import {
   parseBody,
   requireTenantSession,
 } from "@/lib/api-helpers";
-import { bookingSettings } from "@/lib/availability";
+import { billingSettings, bookingSettings } from "@/lib/availability";
 import { recordActivity } from "@/lib/activity";
 
 /** Restaurant profile + booking rules. Readable by any dashboard user. */
@@ -21,6 +21,7 @@ export async function GET() {
     return ok({
       ...restaurant,
       bookingSettings: bookingSettings(restaurant.bookingSettings),
+      billingSettings: billingSettings(restaurant.billingSettings),
     });
   } catch (error) {
     return handleApiError(error);
@@ -39,6 +40,9 @@ export async function PATCH(request: NextRequest) {
     }
     for (const [key, value] of Object.entries(input.bookingSettings ?? {})) {
       update[`bookingSettings.${key}`] = value;
+    }
+    for (const [key, value] of Object.entries(input.billingSettings ?? {})) {
+      update[`billingSettings.${key}`] = value;
     }
 
     if (Object.keys(update).length === 0) {
@@ -65,6 +69,7 @@ export async function PATCH(request: NextRequest) {
     return ok({
       ...restaurant,
       bookingSettings: bookingSettings(restaurant.bookingSettings),
+      billingSettings: billingSettings(restaurant.billingSettings),
     });
   } catch (error) {
     return handleApiError(error);

@@ -53,9 +53,15 @@ export const bookingSettingsSchema = z.object({
   autoApprove: z.boolean(),
 });
 
+export const billingSettingsSchema = z.object({
+  vatPercent: z.coerce.number().min(0).max(100),
+  serviceChargePercent: z.coerce.number().min(0).max(100),
+});
+
 export const settingsUpdateSchema = z.object({
   profile: restaurantProfileSchema.partial().optional(),
   bookingSettings: bookingSettingsSchema.partial().optional(),
+  billingSettings: billingSettingsSchema.partial().optional(),
 });
 
 // ---------- Branches ----------
@@ -227,6 +233,51 @@ export const publicBookingUpdateSchema = z
     { message: "Choose a new date, time or party size" }
   );
 
+// ---------- Orders ----------
+
+export const orderCreateSchema = z
+  .object({
+    branchId: objectId.optional(),
+    reservationId: objectId.optional(),
+    tableIds: z.array(objectId).max(4).optional(),
+    guests: z.coerce.number().int().min(1).max(50).optional(),
+  })
+  .refine((value) => !!value.branchId || !!value.reservationId, {
+    message: "A branch or a reservation is required",
+  });
+
+export const orderItemsSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        menuItemId: objectId,
+        quantity: z.coerce.number().int().min(1).max(99).default(1),
+        notes: z.string().max(200).optional().or(z.literal("")),
+      })
+    )
+    .min(1, "Add at least one item"),
+});
+
+export const orderItemUpdateSchema = z.object({
+  quantity: z.coerce.number().int().min(1).max(99).optional(),
+  notes: z.string().max(200).optional().or(z.literal("")),
+  status: z.enum(["queued", "preparing", "ready", "served"]).optional(),
+  voided: z.boolean().optional(),
+});
+
+export const orderUpdateSchema = z.object({
+  discountAmount: z.coerce.number().min(0).optional(),
+  guests: z.coerce.number().int().min(1).max(50).optional(),
+  /** Marks every queued line as sent to the kitchen. */
+  sendToKitchen: z.boolean().optional(),
+});
+
+export const orderPaymentSchema = z.object({
+  method: z.enum(["cash", "card", "bkash", "nagad", "rocket", "other"]),
+  amount: z.coerce.number().min(0).optional(),
+  reference: z.string().max(60).optional().or(z.literal("")),
+});
+
 // ---------- Customers ----------
 
 export const customerSchema = z.object({
@@ -310,8 +361,10 @@ export type PublicReservationInput = z.infer<typeof publicReservationSchema>;
 export type CustomerInput = z.infer<typeof customerSchema>;
 export type StaffInput = z.infer<typeof staffSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
+export type OrderPaymentInput = z.infer<typeof orderPaymentSchema>;
 export type WaitlistInput = z.infer<typeof waitlistSchema>;
 export type TableInput = z.infer<typeof tableSchema>;
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type RestaurantProfileInput = z.infer<typeof restaurantProfileSchema>;
 export type BookingSettingsInput = z.infer<typeof bookingSettingsSchema>;
+export type BillingSettingsInput = z.infer<typeof billingSettingsSchema>;

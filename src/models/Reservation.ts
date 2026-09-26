@@ -16,6 +16,8 @@ export interface IReservation extends Document {
   estimatedSpend?: number;
   /** Set once the reminder email has gone out, so it is sent only once. */
   reminderSentAt?: Date;
+  /** The paid order that settled this booking, if it was billed. */
+  orderId?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +55,7 @@ const ReservationSchema = new Schema<IReservation>(
     specialRequests: { type: String, trim: true },
     estimatedSpend: { type: Number, min: 0 },
     reminderSentAt: { type: Date },
+    orderId: { type: Schema.Types.ObjectId, ref: "Order" },
   },
   { timestamps: true }
 );

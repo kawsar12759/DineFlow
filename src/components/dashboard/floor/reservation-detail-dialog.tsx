@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -9,6 +10,7 @@ import {
   CheckCheck,
   Clock,
   Phone,
+  ReceiptText,
   UserX,
   Utensils,
 } from "lucide-react";
@@ -64,7 +66,35 @@ export function ReservationDetailDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [moveTo, setMoveTo] = useState<string>("");
+
+  // Opens the ticket for this booking, or jumps to the one already open.
+  const openOrder = useMutation({
+    mutationFn: async () => {
+      const existing = await api.get<{ _id: string }[]>(
+        `/api/orders?status=open&limit=100`
+      );
+      const match = existing.data.find(
+        (order) =>
+          (order as unknown as { reservationId?: string }).reservationId ===
+          reservation?._id
+      );
+      if (match) return match;
+      const created = await api.post<{ _id: string }>("/api/orders", {
+        reservationId: reservation?._id,
+      });
+      return created.data;
+    },
+    onSuccess: (order) => {
+      onOpenChange(false);
+      router.push(`/dashboard/orders/${order._id}`);
+    },
+    onError: (error) =>
+      toast.error(
+        error instanceof ApiClientError ? error.message : "Could not open the order"
+      ),
+  });
 
   const update = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
@@ -135,6 +165,18 @@ export function ReservationDetailDialog({
               </Badge>
             )}
           </div>
+
+          {["approved", "seated"].includes(reservation.status) && (
+            <Button
+              variant="secondary"
+              className="w-full"
+              loading={openOrder.isPending}
+              onClick={() => openOrder.mutate()}
+            >
+              <ReceiptText className="h-4 w-4" />
+              Open the order
+            </Button>
+          )}
 
           {/* Status actions */}
           {nextStatuses.length > 0 && (

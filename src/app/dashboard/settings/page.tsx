@@ -9,8 +9,10 @@ import { toast } from "sonner";
 import { ExternalLink } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import {
+  billingSettingsSchema,
   bookingSettingsSchema,
   restaurantProfileSchema,
+  type BillingSettingsInput,
   type BookingSettingsInput,
   type RestaurantProfileInput,
 } from "@/lib/validations";
@@ -29,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { BookingSettings } from "@/lib/constants";
+import type { BillingSettings, BookingSettings } from "@/lib/constants";
 
 interface RestaurantSettings {
   _id: string;
@@ -43,6 +45,7 @@ interface RestaurantSettings {
   website?: string;
   isPublished: boolean;
   bookingSettings: BookingSettings;
+  billingSettings: BillingSettings;
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -65,6 +68,9 @@ export default function SettingsPage() {
   const bookingForm = useForm<BookingSettingsInput>({
     resolver: zodResolver(bookingSettingsSchema),
   });
+  const billingForm = useForm<BillingSettingsInput>({
+    resolver: zodResolver(billingSettingsSchema),
+  });
 
   useEffect(() => {
     if (!settings) return;
@@ -79,7 +85,8 @@ export default function SettingsPage() {
       isPublished: settings.isPublished,
     });
     bookingForm.reset(settings.bookingSettings);
-  }, [settings, profileForm, bookingForm]);
+    billingForm.reset(settings.billingSettings);
+  }, [settings, profileForm, bookingForm, billingForm]);
 
   const save = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
@@ -347,6 +354,60 @@ export default function SettingsPage() {
           <CardFooter className="justify-end">
             <Button type="submit" loading={save.isPending}>
               Save booking rules
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+
+      {/* Bills */}
+      <Card>
+        <form
+          onSubmit={billingForm.handleSubmit((values) =>
+            save.mutate({ billingSettings: values })
+          )}
+        >
+          <CardHeader>
+            <CardTitle>Bills</CardTitle>
+            <CardDescription>
+              Charged on every bill after any discount. Bangladeshi restaurants
+              normally add 5% VAT and a 10% service charge.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="vatPercent">VAT (%)</Label>
+              <Input
+                id="vatPercent"
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                {...billingForm.register("vatPercent")}
+              />
+              <FieldError
+                message={billingForm.formState.errors.vatPercent?.message}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="serviceChargePercent">Service charge (%)</Label>
+              <Input
+                id="serviceChargePercent"
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                {...billingForm.register("serviceChargePercent")}
+              />
+              <FieldError
+                message={
+                  billingForm.formState.errors.serviceChargePercent?.message
+                }
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="justify-end">
+            <Button type="submit" loading={save.isPending}>
+              Save bill settings
             </Button>
           </CardFooter>
         </form>

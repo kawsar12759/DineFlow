@@ -1,7 +1,9 @@
 import { ApiError } from "@/lib/api-error";
 import {
   DAYS_OF_WEEK,
+  DEFAULT_BILLING_SETTINGS,
   DEFAULT_BOOKING_SETTINGS,
+  type BillingSettings,
   type BookingSettings,
   type OpeningHour,
 } from "@/lib/constants";
@@ -31,6 +33,12 @@ export function bookingSettings(
   settings?: Partial<BookingSettings> | null
 ): BookingSettings {
   return { ...DEFAULT_BOOKING_SETTINGS, ...(settings ?? {}) };
+}
+
+export function billingSettings(
+  settings?: Partial<BillingSettings> | null
+): BillingSettings {
+  return { ...DEFAULT_BILLING_SETTINGS, ...(settings ?? {}) };
 }
 
 /** The weekday (0 = Sunday) a Dhaka day key falls on. */

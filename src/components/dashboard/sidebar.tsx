@@ -9,6 +9,7 @@ import {
   ChefHat,
   Grid2x2,
   History,
+  ReceiptText,
   LayoutDashboard,
   MoreHorizontal,
   Settings,
@@ -50,6 +51,18 @@ const navItems: NavItem[] = [
     href: "/dashboard/floor",
     label: "Floor",
     icon: Grid2x2,
+    roles: ["super_admin", "owner", "manager", "staff"],
+  },
+  {
+    href: "/dashboard/orders",
+    label: "Orders",
+    icon: ReceiptText,
+    roles: ["super_admin", "owner", "manager", "staff"],
+  },
+  {
+    href: "/dashboard/kitchen",
+    label: "Kitchen",
+    icon: ChefHat,
     roles: ["super_admin", "owner", "manager", "staff"],
   },
   {

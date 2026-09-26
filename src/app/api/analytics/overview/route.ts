@@ -7,6 +7,7 @@ import {
   requireTenantSession,
 } from "@/lib/api-helpers";
 import { percentChange } from "@/lib/utils";
+import { revenueTotal } from "@/lib/revenue";
 import {
   addDaysToKey,
   dayKeyToDate,
@@ -40,11 +41,15 @@ export async function GET() {
       )
     );
 
+    const branchScopeId = ctx.branchScope
+      ? new Types.ObjectId(ctx.branchScope)
+      : undefined;
+
     const [
       todaysReservations,
       yesterdaysReservations,
-      revenueAgg,
-      prevRevenueAgg,
+      revenue,
+      prevRevenue,
       occupancyAgg,
       totalCapacityAgg,
       popularItems,
@@ -62,28 +67,18 @@ export async function GET() {
         ...scope,
         date: { $gte: yesterdayStart, $lt: todayStart },
       }),
-      Reservation.aggregate([
-        {
-          $match: {
-            restaurantId,
-            status: "completed",
-            ...scope,
-            date: { $gte: monthStart, $lt: tomorrowStart },
-          },
-        },
-        { $group: { _id: null, total: { $sum: "$estimatedSpend" } } },
-      ]),
-      Reservation.aggregate([
-        {
-          $match: {
-            restaurantId,
-            status: "completed",
-            ...scope,
-            date: { $gte: prevMonthStart, $lt: prevComparableEnd },
-          },
-        },
-        { $group: { _id: null, total: { $sum: "$estimatedSpend" } } },
-      ]),
+      revenueTotal({
+        restaurantId,
+        from: monthStart,
+        to: tomorrowStart,
+        branchId: branchScopeId,
+      }),
+      revenueTotal({
+        restaurantId,
+        from: prevMonthStart,
+        to: prevComparableEnd,
+        branchId: branchScopeId,
+      }),
       Reservation.aggregate([
         {
           $match: {
@@ -130,8 +125,6 @@ export async function GET() {
       Reservation.countDocuments({ restaurantId, ...scope, status: "pending" }),
     ]);
 
-    const revenue = revenueAgg[0]?.total ?? 0;
-    const prevRevenue = prevRevenueAgg[0]?.total ?? 0;
     const guestsToday = occupancyAgg[0]?.guests ?? 0;
     const totalCapacity = totalCapacityAgg[0]?.capacity ?? 0;
 

@@ -292,9 +292,12 @@ export default function ManageBookingPage({
         </Card>
       )}
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="flex justify-center gap-4 text-center text-sm text-muted-foreground">
         <Link href={`/r/${booking.restaurant.slug}`} className="hover:text-foreground">
           View {booking.restaurant.name}
+        </Link>
+        <Link href="/account" className="hover:text-foreground">
+          All my bookings &amp; points
         </Link>
       </p>
 

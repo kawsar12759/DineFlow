@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Types } from "mongoose";
-import { Customer, Order, Reservation } from "@/models";
+import { Customer, Order, Reservation, Restaurant } from "@/models";
 import { orderPaymentSchema } from "@/lib/validations";
 import {
   ApiError,
@@ -16,13 +16,16 @@ import { applyTotals } from "@/lib/orders";
 import { recordActivity } from "@/lib/activity";
 import { trackEvent } from "@/lib/analytics";
 import { formatCurrency } from "@/lib/utils";
+import { changePoints, loyaltySettings, pointsForSpend } from "@/lib/loyalty";
+import { requestFeedback } from "@/lib/feedback";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 /**
  * Closes the bill. This is where revenue becomes real: the paid total is
  * recorded on the order, on the guest's profile, and on the booking, which
- * is completed at the same time.
+ * is completed at the same time. Redeemed loyalty points are spent and new
+ * ones earned.
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
@@ -58,6 +61,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    const restaurant = await Restaurant.findById(ctx.restaurantId)
+      .select("loyaltySettings")
+      .lean();
+    const loyalty = loyaltySettings(restaurant?.loyaltySettings);
+
+    // Spend the points first: if the guest no longer has them (spent at
+    // another till), the bill must not close at the discounted price.
+    const redeemed = order.customerId ? order.loyaltyPointsRedeemed ?? 0 : 0;
+    if (redeemed > 0) {
+      const spent = await changePoints({
+        restaurantId: ctx.restaurantId,
+        customerId: order.customerId!,
+        type: "redeem",
+        points: -redeemed,
+        orderId: order._id,
+        note: `${formatCurrency(order.loyaltyDiscount)} off order #${order.orderNumber}`,
+        actorId: ctx.userId,
+      });
+      if (!spent) {
+        throw new ApiError(
+          "The guest no longer has enough points — remove the redemption and try again",
+          409
+        );
+      }
+    }
+
+    // Points are earned on the food, after discounts, before VAT and service.
+    const earned = order.customerId
+      ? pointsForSpend(totals.taxableAmount, loyalty)
+      : 0;
+    order.loyaltyPointsEarned = earned;
+
     order.status = "paid";
     order.closedBy = new Types.ObjectId(ctx.userId);
     order.payment = {
@@ -72,7 +107,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       paidAt: new Date(),
       receivedBy: order.closedBy,
     };
-    await order.save();
+    try {
+      await order.save();
+    } catch (error) {
+      if (redeemed > 0) {
+        await changePoints({
+          restaurantId: ctx.restaurantId,
+          customerId: order.customerId!,
+          type: "adjust",
+          points: redeemed,
+          orderId: order._id,
+          note: `Refunded: order #${order.orderNumber} could not be closed`,
+        });
+      }
+      throw error;
+    }
+
+    if (earned > 0) {
+      await changePoints({
+        restaurantId: ctx.restaurantId,
+        customerId: order.customerId!,
+        type: "earn",
+        points: earned,
+        orderId: order._id,
+        note: `Order #${order.orderNumber}, ${formatCurrency(totals.total)}`,
+        actorId: ctx.userId,
+      });
+    }
 
     // The booking is finished, and the guest's history gets the real spend.
     if (order.reservationId) {
@@ -104,6 +165,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           $inc: { totalSpend: totals.total, visitCount: 1 },
         }
       );
+    }
+
+    if (order.reservationId) {
+      await requestFeedback(order.reservationId, {
+        origin: request.nextUrl.origin,
+        pointsEarned: earned,
+      });
     }
 
     await trackEvent(ctx.restaurantId, "revenue_recorded", {

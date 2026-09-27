@@ -16,6 +16,8 @@ export interface BillLine {
 export interface BillCharges {
   /** Flat amount off the subtotal, in BDT. */
   discountAmount?: number;
+  /** Taka off for redeemed loyalty points, applied after the discount. */
+  loyaltyDiscount?: number;
   vatPercent?: number;
   serviceChargePercent?: number;
 }
@@ -23,7 +25,8 @@ export interface BillCharges {
 export interface BillTotals {
   subtotal: number;
   discountAmount: number;
-  /** Subtotal minus discount — what the percentages are charged on. */
+  loyaltyDiscount: number;
+  /** Subtotal minus discounts — what the percentages are charged on. */
   taxableAmount: number;
   serviceChargeAmount: number;
   vatAmount: number;
@@ -50,7 +53,10 @@ export function computeBill(
   const discountAmount = round(
     Math.min(Math.max(charges.discountAmount ?? 0, 0), subtotal)
   );
-  const taxableAmount = round(subtotal - discountAmount);
+  const loyaltyDiscount = round(
+    Math.min(Math.max(charges.loyaltyDiscount ?? 0, 0), subtotal - discountAmount)
+  );
+  const taxableAmount = round(subtotal - discountAmount - loyaltyDiscount);
 
   const serviceChargeAmount = round(
     (taxableAmount * (charges.serviceChargePercent ?? 0)) / 100
@@ -60,6 +66,7 @@ export function computeBill(
   return {
     subtotal,
     discountAmount,
+    loyaltyDiscount,
     taxableAmount,
     serviceChargeAmount,
     vatAmount,

@@ -12,7 +12,7 @@ import {
 } from "@/lib/email/templates";
 
 /** Walk-ins get a placeholder address; never email those. */
-function isRealEmail(email: string) {
+export function isRealEmail(email: string) {
   return !!email && !email.endsWith("@walk-in.dineflow");
 }
 

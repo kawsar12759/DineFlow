@@ -3,6 +3,7 @@
 import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
   CalendarCheck,
@@ -14,7 +15,12 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { formatCurrency, formatDate, formatTime, getInitials } from "@/lib/utils";
-import type { ReservationStatus } from "@/lib/constants";
+import type { LoyaltySettings, ReservationStatus } from "@/lib/constants";
+import {
+  LoyaltyCard,
+  type LoyaltyEntry,
+} from "@/components/dashboard/customers/loyalty-card";
+import { StarRating } from "@/components/shared/star-rating";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
@@ -45,6 +51,7 @@ interface CustomerDetail {
     phone?: string;
     totalSpend: number;
     visitCount: number;
+    loyaltyPoints?: number;
     tags: string[];
     notes?: string;
     createdAt: string;
@@ -63,6 +70,16 @@ interface CustomerDetail {
     guests: number;
     status: ReservationStatus;
   }[];
+  loyaltyHistory: LoyaltyEntry[];
+  loyalty: LoyaltySettings;
+  feedback: {
+    _id: string;
+    rating: number;
+    comment?: string;
+    createdAt: string;
+    branchId: { name: string } | null;
+    reply?: { body: string };
+  }[];
 }
 
 export default function CustomerDetailPage({
@@ -71,6 +88,10 @@ export default function CustomerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { data: session } = useSession();
+  const canAdjust = ["super_admin", "owner", "manager"].includes(
+    session?.user?.role ?? ""
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: ["customer", id],
@@ -79,6 +100,7 @@ export default function CustomerDetailPage({
 
   const customer = data?.data.customer;
   const reservations = data?.data.reservations ?? [];
+  const feedback = data?.data.feedback ?? [];
 
   if (isLoading) {
     return (
@@ -283,6 +305,51 @@ export default function CustomerDetailPage({
                   ))}
                 </TableBody>
               </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {data && (
+          <LoyaltyCard
+            customerId={customer._id}
+            customerName={customer.name}
+            points={customer.loyaltyPoints ?? 0}
+            history={data.data.loyaltyHistory}
+            settings={data.data.loyalty}
+            canAdjust={canAdjust}
+          />
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Feedback</CardTitle>
+            <CardDescription>How this guest rated their visits</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {feedback.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No feedback left yet.</p>
+            ) : (
+              <ul className="divide-y">
+                {feedback.map((entry) => (
+                  <li key={entry._id} className="space-y-1 py-3 first:pt-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <StarRating value={entry.rating} />
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(entry.createdAt)}
+                        {entry.branchId ? ` · ${entry.branchId.name}` : ""}
+                      </span>
+                    </div>
+                    {entry.comment && <p className="text-sm">“{entry.comment}”</p>}
+                    {entry.reply?.body && (
+                      <p className="text-xs text-muted-foreground">
+                        Replied: {entry.reply.body}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
             )}
           </CardContent>
         </Card>

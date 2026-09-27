@@ -11,9 +11,11 @@ import { api, ApiClientError } from "@/lib/api-client";
 import {
   billingSettingsSchema,
   bookingSettingsSchema,
+  loyaltySettingsSchema,
   restaurantProfileSchema,
   type BillingSettingsInput,
   type BookingSettingsInput,
+  type LoyaltySettingsInput,
   type RestaurantProfileInput,
 } from "@/lib/validations";
 import { PageHeader } from "@/components/shared/page-header";
@@ -31,7 +33,13 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { BillingSettings, BookingSettings } from "@/lib/constants";
+import type {
+  BillingSettings,
+  BookingSettings,
+  FeedbackSettings,
+  LoyaltySettings,
+} from "@/lib/constants";
+import { formatCurrency } from "@/lib/utils";
 
 interface RestaurantSettings {
   _id: string;
@@ -46,6 +54,8 @@ interface RestaurantSettings {
   isPublished: boolean;
   bookingSettings: BookingSettings;
   billingSettings: BillingSettings;
+  loyaltySettings: LoyaltySettings;
+  feedbackSettings: FeedbackSettings;
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -71,6 +81,9 @@ export default function SettingsPage() {
   const billingForm = useForm<BillingSettingsInput>({
     resolver: zodResolver(billingSettingsSchema),
   });
+  const loyaltyForm = useForm<LoyaltySettingsInput>({
+    resolver: zodResolver(loyaltySettingsSchema),
+  });
 
   useEffect(() => {
     if (!settings) return;
@@ -86,7 +99,8 @@ export default function SettingsPage() {
     });
     bookingForm.reset(settings.bookingSettings);
     billingForm.reset(settings.billingSettings);
-  }, [settings, profileForm, bookingForm, billingForm]);
+    loyaltyForm.reset(settings.loyaltySettings);
+  }, [settings, profileForm, bookingForm, billingForm, loyaltyForm]);
 
   const save = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
@@ -112,6 +126,12 @@ export default function SettingsPage() {
   }
 
   const published = profileForm.watch("isPublished");
+  const loyaltyOn = loyaltyForm.watch("enabled");
+  const earnRate = Number(loyaltyForm.watch("pointsPer100Taka")) || 0;
+  const pointValue = Number(loyaltyForm.watch("pointValueTaka")) || 0;
+  const minRedeem = Number(loyaltyForm.watch("minRedeemPoints")) || 0;
+  // A worked example for the owner: what a ৳1,000 bill earns.
+  const examplePoints = Math.floor(10 * earnRate);
 
   return (
     <>
@@ -411,6 +431,144 @@ export default function SettingsPage() {
             </Button>
           </CardFooter>
         </form>
+      </Card>
+
+      {/* Loyalty */}
+      <Card>
+        <form
+          onSubmit={loyaltyForm.handleSubmit((values) =>
+            save.mutate({ loyaltySettings: values })
+          )}
+        >
+          <CardHeader>
+            <CardTitle>Loyalty points</CardTitle>
+            <CardDescription>
+              Guests earn points on every paid bill and spend them as taka off a
+              later one. Points are earned on food after discounts, not on VAT or
+              service charge.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label htmlFor="loyaltyEnabled">Run a loyalty programme</Label>
+                <p className="text-xs text-muted-foreground">
+                  {loyaltyOn
+                    ? "Guests attached to a bill earn points when it is paid."
+                    : "No points are earned or redeemed. Existing balances are kept."}
+                </p>
+              </div>
+              <Switch
+                id="loyaltyEnabled"
+                checked={!!loyaltyOn}
+                onCheckedChange={(checked) =>
+                  loyaltyForm.setValue("enabled", checked, { shouldDirty: true })
+                }
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="pointsPer100Taka">Points per ৳100 spent</Label>
+                <Input
+                  id="pointsPer100Taka"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  {...loyaltyForm.register("pointsPer100Taka")}
+                />
+                <FieldError
+                  message={loyaltyForm.formState.errors.pointsPer100Taka?.message}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pointValueTaka">One point is worth (৳)</Label>
+                <Input
+                  id="pointValueTaka"
+                  type="number"
+                  min={0.01}
+                  max={100}
+                  step={0.01}
+                  {...loyaltyForm.register("pointValueTaka")}
+                />
+                <FieldError
+                  message={loyaltyForm.formState.errors.pointValueTaka?.message}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="minRedeemPoints">Redeem from (points)</Label>
+                <Input
+                  id="minRedeemPoints"
+                  type="number"
+                  min={1}
+                  {...loyaltyForm.register("minRedeemPoints")}
+                />
+                <FieldError
+                  message={loyaltyForm.formState.errors.minRedeemPoints?.message}
+                />
+              </div>
+            </div>
+
+            <p className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+              A ৳1,000 bill earns {examplePoints} points, worth{" "}
+              {formatCurrency(examplePoints * pointValue)} off a later visit.
+              Guests can redeem once they have {minRedeem} points (
+              {formatCurrency(minRedeem * pointValue)} off).
+            </p>
+          </CardContent>
+          <CardFooter className="justify-end">
+            <Button type="submit" loading={save.isPending}>
+              Save loyalty settings
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+
+      {/* Feedback */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Guest feedback</CardTitle>
+          <CardDescription>
+            After a visit is paid or completed, the guest can rate it from 1 to 5
+            stars and leave a comment. Reviews appear under Feedback.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label htmlFor="requestAfterVisit">Ask guests for feedback</Label>
+              <p className="text-xs text-muted-foreground">
+                Email a &ldquo;How was your visit?&rdquo; link once the bill is closed.
+              </p>
+            </div>
+            <Switch
+              id="requestAfterVisit"
+              checked={settings.feedbackSettings.requestAfterVisit}
+              disabled={save.isPending}
+              onCheckedChange={(checked) =>
+                save.mutate({ feedbackSettings: { requestAfterVisit: checked } })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label htmlFor="showOnPublicPage">Show reviews on your public page</Label>
+              <p className="text-xs text-muted-foreground">
+                Your average rating and recent comments, with your replies. You can
+                hide single reviews from the Feedback page.
+              </p>
+            </div>
+            <Switch
+              id="showOnPublicPage"
+              checked={settings.feedbackSettings.showOnPublicPage}
+              disabled={save.isPending}
+              onCheckedChange={(checked) =>
+                save.mutate({ feedbackSettings: { showOnPublicPage: checked } })
+              }
+            />
+          </div>
+        </CardContent>
       </Card>
     </>
   );

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock, Globe, Mail, MapPin, Phone, Users, UtensilsCrossed } from "lucide-react";
+import { Clock, Gift, Globe, Mail, MapPin, Phone, Star, Users, UtensilsCrossed } from "lucide-react";
 import { connectDB } from "@/lib/db";
-import { Branch, MenuItem, Restaurant } from "@/models";
+import { Branch, Feedback, MenuItem, Restaurant } from "@/models";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -13,7 +13,10 @@ import {
 } from "@/components/public/booking-widget";
 import { bookingSettings, describeHours } from "@/lib/availability";
 import { MENU_CATEGORIES } from "@/lib/constants";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { feedbackSettings, publicGuestName, ratingSummary } from "@/lib/feedback";
+import { loyaltySettings } from "@/lib/loyalty";
+import { StarRating } from "@/components/shared/star-rating";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -34,7 +37,24 @@ async function loadStorefront(slug: string) {
       .lean(),
   ]);
 
-  return { restaurant, branches, menu };
+  const showReviews = feedbackSettings(restaurant.feedbackSettings).showOnPublicPage;
+  const [rating, reviews] = showReviews
+    ? await Promise.all([
+        ratingSummary({ restaurantId: restaurant._id, isPublic: true }),
+        Feedback.find({
+          restaurantId: restaurant._id,
+          isPublic: true,
+          comment: { $exists: true, $ne: "" },
+        })
+          .sort({ createdAt: -1 })
+          .limit(6)
+          .populate<{ customerId: { name: string } | null }>("customerId", "name")
+          .populate<{ branchId: { name: string } | null }>("branchId", "name")
+          .lean(),
+      ])
+    : [null, []];
+
+  return { restaurant, branches, menu, rating, reviews };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -56,8 +76,9 @@ export default async function RestaurantStorefront({ params }: PageProps) {
   const data = await loadStorefront(slug);
   if (!data) notFound();
 
-  const { restaurant, branches, menu } = data;
+  const { restaurant, branches, menu, rating, reviews } = data;
   const settings = bookingSettings(restaurant.bookingSettings);
+  const loyalty = loyaltySettings(restaurant.loyaltySettings);
 
   const bookingBranches: BookingBranch[] = branches.map((branch) => ({
     _id: branch._id.toString(),
@@ -124,6 +145,13 @@ export default async function RestaurantStorefront({ params }: PageProps) {
               <MapPin className="h-4 w-4" />
               {branches.length} {branches.length === 1 ? "location" : "locations"}
             </span>
+            {rating && rating.count > 0 && (
+              <a href="#reviews" className="flex items-center gap-2 hover:text-white">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                {rating.average.toFixed(1)} · {rating.count}{" "}
+                {rating.count === 1 ? "review" : "reviews"}
+              </a>
+            )}
           </div>
         </div>
       </header>
@@ -216,6 +244,71 @@ export default async function RestaurantStorefront({ params }: PageProps) {
               </div>
             )}
           </section>
+
+          {/* Reviews */}
+          {rating && rating.count > 0 && (
+            <section id="reviews" className="scroll-mt-8">
+              <h2 className="text-xl font-semibold tracking-tight">What guests say</h2>
+              <div className="mt-4 flex flex-wrap items-center gap-6">
+                <div>
+                  <div className="text-4xl font-semibold">{rating.average.toFixed(1)}</div>
+                  <StarRating value={rating.average} />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {rating.count} verified {rating.count === 1 ? "visit" : "visits"}
+                  </p>
+                </div>
+                <div className="min-w-[200px] flex-1 space-y-1">
+                  {[5, 4, 3, 2, 1].map((stars) => {
+                    const count = rating.distribution[stars - 1];
+                    return (
+                      <div key={stars} className="flex items-center gap-2 text-xs">
+                        <span className="w-3 text-muted-foreground">{stars}</span>
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-amber-400"
+                            style={{ width: `${(count / rating.count) * 100}%` }}
+                          />
+                        </div>
+                        <span className="w-6 text-right text-muted-foreground">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {reviews.length > 0 && (
+                <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {reviews.map((review) => (
+                    <li key={review._id.toString()}>
+                      <Card className="h-full">
+                        <CardContent className="space-y-2 p-5">
+                          <div className="flex items-center justify-between gap-2">
+                            <StarRating value={review.rating} />
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(review.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed">“{review.comment}”</p>
+                          <p className="text-xs text-muted-foreground">
+                            {publicGuestName(review.customerId?.name ?? "Guest")}
+                            {review.branchId ? ` · ${review.branchId.name}` : ""}
+                          </p>
+                          {review.reply?.body && (
+                            <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+                              <span className="font-medium text-foreground">
+                                Reply from {restaurant.name}:
+                              </span>{" "}
+                              {review.reply.body}
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
         </div>
 
         {/* Booking */}
@@ -230,6 +323,21 @@ export default async function RestaurantStorefront({ params }: PageProps) {
             <p className="rounded-xl border p-6 text-sm text-muted-foreground">
               Online booking is not available yet.
             </p>
+          )}
+          {loyalty.enabled && (
+            <div className="mt-4 flex gap-3 rounded-xl border p-4 text-sm">
+              <Gift className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p className="font-medium">Earn points every visit</p>
+                <p className="mt-1 text-muted-foreground">
+                  {loyalty.pointsPer100Taka} points for every ৳100 you spend, worth{" "}
+                  {formatCurrency(loyalty.pointValueTaka)} each off a later bill.{" "}
+                  <Link href="/account" className="text-primary hover:underline">
+                    See your points
+                  </Link>
+                </p>
+              </div>
+            </div>
           )}
         </aside>
       </div>

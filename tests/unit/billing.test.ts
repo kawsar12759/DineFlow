@@ -79,3 +79,30 @@ describe("computeBill", () => {
     expect(bill.total).toBe(1500);
   });
 });
+
+describe("loyalty discount", () => {
+  it("comes off after the discount and before service charge and VAT", () => {
+    const bill = computeBill([{ unitPrice: 1000, quantity: 1 }], {
+      ...charges,
+      discountAmount: 100,
+      loyaltyDiscount: 150,
+    });
+
+    expect(bill.discountAmount).toBe(100);
+    expect(bill.loyaltyDiscount).toBe(150);
+    expect(bill.taxableAmount).toBe(750);
+    expect(bill.serviceChargeAmount).toBe(75);
+    expect(bill.vatAmount).toBe(37.5);
+    expect(bill.total).toBe(862.5);
+  });
+
+  it("never takes the bill below zero", () => {
+    const bill = computeBill([{ unitPrice: 300, quantity: 1 }], {
+      discountAmount: 200,
+      loyaltyDiscount: 500,
+    });
+
+    expect(bill.loyaltyDiscount).toBe(100);
+    expect(bill.total).toBe(0);
+  });
+});

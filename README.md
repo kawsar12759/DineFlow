@@ -15,6 +15,8 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - Guests manage their own booking from a signed link: view, change the time or cancel, no account needed
 - Emails for every step: booking received, confirmed, cancelled, and a reminder the day before
 - Public branch directory and searchable menu across published restaurants
+- Guest portal at `/account`: guests sign in with an emailed link (no password) and see every booking, visit and loyalty balance across all DineFlow restaurants they have booked with
+- After a visit, guests get a "How was it?" email and rate it 1–5 stars with a comment; restaurant pages show the average rating and recent reviews with replies
 
 **SaaS dashboard**
 - Overview: today's reservations, revenue, occupancy, customer growth + Recharts trend charts
@@ -33,6 +35,8 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - Orders: open a ticket for a seated booking or a table, add dishes at today's prices, send them to the kitchen, and close the bill
 - Kitchen screen: tickets as they are sent, moved through cooking → ready → served, with a timer that turns red after 20 minutes
 - Bills in BDT with service charge, VAT and discounts; paid by cash, card, bKash, Nagad or Rocket, with change worked out for you
+- Feedback: every review with rating summary and filters; owners and managers reply (emailed to the guest) or hide a review from the public page; a notification for each new review
+- Loyalty points: owners set the earn rate, point value and redemption minimum; guests attached to a bill earn points on the food they pay for, and staff redeem points as taka off at the till; each guest's balance has a full ledger, with manual adjustments by managers
 - Personal profile page with password change, and a light/dark theme toggle
 - Analytics: revenue, reservation, customer, branch, and menu popularity aggregations (server-side MongoDB pipelines)
 
@@ -80,6 +84,8 @@ Integration tests call the real route handlers against an in-memory MongoDB (`mo
 | `owner@ember-oak.com` | Owner — full access |
 | `manager@ember-oak.com` | Manager — no branch deletion, can't create managers |
 | `staff@ember-oak.com` | Staff — reservations, menu availability only |
+
+Guest portal: open `/account` and enter `guest@example.com`. Without `RESEND_API_KEY` the sign-in link is printed in the dev server log.
 | `owner@sakura-table.com` | Owner of a second tenant (verifies isolation) |
 
 ## Project structure

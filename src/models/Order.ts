@@ -51,6 +51,12 @@ export interface IOrder extends Document {
   items: IOrderItem[];
   status: OrderStatus;
   discountAmount: number;
+  /** Points the guest is spending on this bill; deducted when it is paid. */
+  loyaltyPointsRedeemed: number;
+  /** Taka taken off the bill for those points. */
+  loyaltyDiscount: number;
+  /** Points the guest earned when the bill was paid. */
+  loyaltyPointsEarned: number;
   vatPercent: number;
   serviceChargePercent: number;
   subtotal: number;
@@ -109,6 +115,9 @@ const OrderSchema = new Schema<IOrder>(
     items: { type: [OrderItemSchema], default: [] },
     status: { type: String, enum: ORDER_STATUSES, default: "open", index: true },
     discountAmount: { type: Number, default: 0, min: 0 },
+    loyaltyPointsRedeemed: { type: Number, default: 0, min: 0 },
+    loyaltyDiscount: { type: Number, default: 0, min: 0 },
+    loyaltyPointsEarned: { type: Number, default: 0, min: 0 },
     vatPercent: { type: Number, default: 0, min: 0, max: 100 },
     serviceChargePercent: { type: Number, default: 0, min: 0, max: 100 },
     subtotal: { type: Number, default: 0 },

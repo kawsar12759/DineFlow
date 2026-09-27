@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { Restaurant } from "@/models";
+import { Restaurant, type IRestaurant } from "@/models";
 import { settingsUpdateSchema } from "@/lib/validations";
 import {
   ApiError,
@@ -10,6 +10,29 @@ import {
 } from "@/lib/api-helpers";
 import { billingSettings, bookingSettings } from "@/lib/availability";
 import { recordActivity } from "@/lib/activity";
+import { loyaltySettings } from "@/lib/loyalty";
+import { feedbackSettings } from "@/lib/feedback";
+
+function withDefaults<T extends Pick<
+  IRestaurant,
+  "bookingSettings" | "billingSettings" | "loyaltySettings" | "feedbackSettings"
+>>(restaurant: T) {
+  return {
+    ...restaurant,
+    bookingSettings: bookingSettings(restaurant.bookingSettings),
+    billingSettings: billingSettings(restaurant.billingSettings),
+    loyaltySettings: loyaltySettings(restaurant.loyaltySettings),
+    feedbackSettings: feedbackSettings(restaurant.feedbackSettings),
+  };
+}
+
+const SECTION_LABELS = {
+  profile: "the restaurant profile",
+  bookingSettings: "booking rules",
+  billingSettings: "bill settings",
+  loyaltySettings: "the loyalty programme",
+  feedbackSettings: "feedback settings",
+} as const;
 
 /** Restaurant profile + booking rules. Readable by any dashboard user. */
 export async function GET() {
@@ -18,11 +41,7 @@ export async function GET() {
     const restaurant = await Restaurant.findById(ctx.restaurantId).lean();
     if (!restaurant) throw new ApiError("Restaurant not found", 404);
 
-    return ok({
-      ...restaurant,
-      bookingSettings: bookingSettings(restaurant.bookingSettings),
-      billingSettings: billingSettings(restaurant.billingSettings),
-    });
+    return ok(withDefaults(restaurant));
   } catch (error) {
     return handleApiError(error);
   }
@@ -38,11 +57,15 @@ export async function PATCH(request: NextRequest) {
       // Empty strings clear optional fields rather than storing "".
       update[key] = value === "" ? undefined : value;
     }
-    for (const [key, value] of Object.entries(input.bookingSettings ?? {})) {
-      update[`bookingSettings.${key}`] = value;
-    }
-    for (const [key, value] of Object.entries(input.billingSettings ?? {})) {
-      update[`billingSettings.${key}`] = value;
+    for (const section of [
+      "bookingSettings",
+      "billingSettings",
+      "loyaltySettings",
+      "feedbackSettings",
+    ] as const) {
+      for (const [key, value] of Object.entries(input[section] ?? {})) {
+        update[`${section}.${key}`] = value;
+      }
     }
 
     if (Object.keys(update).length === 0) {
@@ -63,14 +86,13 @@ export async function PATCH(request: NextRequest) {
       action: "settings.updated",
       targetType: "restaurant",
       targetId: restaurant._id,
-      summary: `Updated ${input.bookingSettings ? "booking rules" : "the restaurant profile"}`,
+      summary: `Updated ${(Object.keys(input) as (keyof typeof SECTION_LABELS)[])
+        .filter((key) => input[key])
+        .map((key) => SECTION_LABELS[key])
+        .join(" and ")}`,
     });
 
-    return ok({
-      ...restaurant,
-      bookingSettings: bookingSettings(restaurant.bookingSettings),
-      billingSettings: billingSettings(restaurant.billingSettings),
-    });
+    return ok(withDefaults(restaurant));
   } catch (error) {
     return handleApiError(error);
   }

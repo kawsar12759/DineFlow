@@ -9,6 +9,7 @@ import {
   ChefHat,
   Grid2x2,
   History,
+  MessageSquareHeart,
   ReceiptText,
   LayoutDashboard,
   MoreHorizontal,
@@ -87,6 +88,12 @@ const navItems: NavItem[] = [
     href: "/dashboard/customers",
     label: "Customers",
     icon: Users,
+    roles: ["super_admin", "owner", "manager", "staff"],
+  },
+  {
+    href: "/dashboard/feedback",
+    label: "Feedback",
+    icon: MessageSquareHeart,
     roles: ["super_admin", "owner", "manager", "staff"],
   },
   {

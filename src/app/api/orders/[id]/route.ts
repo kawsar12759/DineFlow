@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Types } from "mongoose";
-import { MenuItem, Order, Reservation } from "@/models";
+import { Customer, MenuItem, Order, Reservation, Restaurant } from "@/models";
 import { orderItemsSchema, orderUpdateSchema } from "@/lib/validations";
 import {
   ApiError,
@@ -13,7 +13,9 @@ import {
   tenantFilter,
 } from "@/lib/api-helpers";
 import { applyTotals } from "@/lib/orders";
+import { formatCurrency } from "@/lib/utils";
 import { recordActivity } from "@/lib/activity";
+import { loyaltySettings, pointsValue } from "@/lib/loyalty";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -41,7 +43,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       ...branchFilter(ctx),
     })
       .populate("tableIds", "name seats")
-      .populate("customerId", "name phone email")
+      .populate("customerId", "name phone email loyaltyPoints")
       .populate("branchId", "name")
       .lean();
     if (!order) throw new ApiError("Order not found", 404);
@@ -112,7 +114,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-/** Discount, cover count, or sending queued lines to the kitchen. */
+/**
+ * Discount, cover count, sending queued lines to the kitchen, attaching a
+ * guest, or spending their loyalty points.
+ */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const ctx = await requireTenantSession();
@@ -132,6 +137,72 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         throw new ApiError("Only a manager can apply a discount", 403);
       }
       order.discountAmount = input.discountAmount;
+    }
+
+    if (input.customerId !== undefined) {
+      // A booking's order belongs to whoever booked.
+      if (order.reservationId) {
+        throw new ApiError("This order belongs to a booking's guest", 409);
+      }
+      if (input.customerId === null) {
+        order.customerId = undefined;
+      } else {
+        const customer = await Customer.findOne({
+          _id: parseObjectId(input.customerId, "customer id"),
+          ...tenantFilter(ctx),
+        })
+          .select("_id")
+          .lean();
+        if (!customer) throw new ApiError("Customer not found", 404);
+        order.customerId = customer._id;
+      }
+      // Points belong to the guest they were taken from.
+      order.loyaltyPointsRedeemed = 0;
+      order.loyaltyDiscount = 0;
+    }
+
+    if (input.redeemPoints !== undefined) {
+      if (input.redeemPoints === 0) {
+        order.loyaltyPointsRedeemed = 0;
+        order.loyaltyDiscount = 0;
+      } else {
+        if (!order.customerId) {
+          throw new ApiError("Attach a guest before redeeming points", 400);
+        }
+        const [restaurant, customer] = await Promise.all([
+          Restaurant.findById(ctx.restaurantId).select("loyaltySettings").lean(),
+          Customer.findOne({ _id: order.customerId, ...tenantFilter(ctx) })
+            .select("loyaltyPoints")
+            .lean(),
+        ]);
+        const loyalty = loyaltySettings(restaurant?.loyaltySettings);
+        if (!loyalty.enabled) {
+          throw new ApiError("The loyalty programme is turned off", 400);
+        }
+        if (input.redeemPoints < loyalty.minRedeemPoints) {
+          throw new ApiError(
+            `At least ${loyalty.minRedeemPoints} points must be redeemed at once`,
+            400
+          );
+        }
+        if (!customer || customer.loyaltyPoints < input.redeemPoints) {
+          throw new ApiError(
+            `The guest has only ${customer?.loyaltyPoints ?? 0} points`,
+            400
+          );
+        }
+
+        const value = pointsValue(input.redeemPoints, loyalty);
+        const payable = Math.max(0, order.subtotal - order.discountAmount);
+        if (value > payable + 0.001) {
+          throw new ApiError(
+            `${input.redeemPoints} points are worth ${formatCurrency(value)}, more than the ${formatCurrency(payable)} bill`,
+            400
+          );
+        }
+        order.loyaltyPointsRedeemed = input.redeemPoints;
+        order.loyaltyDiscount = value;
+      }
     }
 
     let sent = 0;

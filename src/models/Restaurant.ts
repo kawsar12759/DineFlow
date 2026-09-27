@@ -2,9 +2,13 @@ import mongoose, { Schema, type Document, type Model, type Types } from "mongoos
 import {
   DEFAULT_BILLING_SETTINGS,
   DEFAULT_BOOKING_SETTINGS,
+  DEFAULT_FEEDBACK_SETTINGS,
+  DEFAULT_LOYALTY_SETTINGS,
   SUBSCRIPTION_PLANS,
   type BillingSettings,
   type BookingSettings,
+  type FeedbackSettings,
+  type LoyaltySettings,
   type SubscriptionPlan,
 } from "@/lib/constants";
 
@@ -24,6 +28,8 @@ export interface IRestaurant extends Document {
   isPublished: boolean;
   bookingSettings: BookingSettings;
   billingSettings: BillingSettings;
+  loyaltySettings: LoyaltySettings;
+  feedbackSettings: FeedbackSettings;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -98,6 +104,37 @@ const RestaurantSchema = new Schema<IRestaurant>(
         min: 0,
         max: 100,
         default: DEFAULT_BILLING_SETTINGS.serviceChargePercent,
+      },
+    },
+    loyaltySettings: {
+      enabled: { type: Boolean, default: DEFAULT_LOYALTY_SETTINGS.enabled },
+      pointsPer100Taka: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: DEFAULT_LOYALTY_SETTINGS.pointsPer100Taka,
+      },
+      pointValueTaka: {
+        type: Number,
+        min: 0.01,
+        max: 100,
+        default: DEFAULT_LOYALTY_SETTINGS.pointValueTaka,
+      },
+      minRedeemPoints: {
+        type: Number,
+        min: 1,
+        max: 100000,
+        default: DEFAULT_LOYALTY_SETTINGS.minRedeemPoints,
+      },
+    },
+    feedbackSettings: {
+      requestAfterVisit: {
+        type: Boolean,
+        default: DEFAULT_FEEDBACK_SETTINGS.requestAfterVisit,
+      },
+      showOnPublicPage: {
+        type: Boolean,
+        default: DEFAULT_FEEDBACK_SETTINGS.showOnPublicPage,
       },
     },
   },

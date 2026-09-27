@@ -5,6 +5,7 @@ export const NOTIFICATION_TYPES = [
   "reservation_cancelled",
   "reservation_changed",
   "waitlist_added",
+  "feedback_received",
   "system",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

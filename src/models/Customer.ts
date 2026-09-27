@@ -18,6 +18,8 @@ export interface ICustomer extends Document {
   totalSpend: number;
   visitCount: number;
   noShowCount: number;
+  /** Current loyalty balance; LoyaltyTransaction holds the history. */
+  loyaltyPoints: number;
   tags: string[];
   notes?: string;
   createdAt: Date;
@@ -47,6 +49,7 @@ const CustomerSchema = new Schema<ICustomer>(
     totalSpend: { type: Number, default: 0 },
     visitCount: { type: Number, default: 0 },
     noShowCount: { type: Number, default: 0 },
+    loyaltyPoints: { type: Number, default: 0, min: 0 },
     tags: [{ type: String, trim: true }],
     notes: { type: String, trim: true },
   },
@@ -55,6 +58,8 @@ const CustomerSchema = new Schema<ICustomer>(
 
 CustomerSchema.index({ restaurantId: 1, email: 1 }, { unique: true });
 CustomerSchema.index({ restaurantId: 1, name: "text" });
+// The guest portal finds a guest's profiles at every restaurant by email.
+CustomerSchema.index({ email: 1 });
 
 export const Customer: Model<ICustomer> =
   mongoose.models.Customer ||

@@ -15,6 +15,13 @@ export {
   type NotificationType,
 } from "./Notification";
 export { ActivityLog, type IActivityLog } from "./ActivityLog";
+export { Feedback, type IFeedback } from "./Feedback";
+export {
+  LoyaltyTransaction,
+  LOYALTY_TRANSACTION_TYPES,
+  type ILoyaltyTransaction,
+  type LoyaltyTransactionType,
+} from "./LoyaltyTransaction";
 export {
   Order,
   ORDER_STATUSES,

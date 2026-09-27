@@ -58,10 +58,24 @@ export const billingSettingsSchema = z.object({
   serviceChargePercent: z.coerce.number().min(0).max(100),
 });
 
+export const loyaltySettingsSchema = z.object({
+  enabled: z.boolean(),
+  pointsPer100Taka: z.coerce.number().min(0).max(100),
+  pointValueTaka: z.coerce.number().min(0.01, "At least ৳0.01").max(100),
+  minRedeemPoints: z.coerce.number().int().min(1).max(100000),
+});
+
+export const feedbackSettingsSchema = z.object({
+  requestAfterVisit: z.boolean(),
+  showOnPublicPage: z.boolean(),
+});
+
 export const settingsUpdateSchema = z.object({
   profile: restaurantProfileSchema.partial().optional(),
   bookingSettings: bookingSettingsSchema.partial().optional(),
   billingSettings: billingSettingsSchema.partial().optional(),
+  loyaltySettings: loyaltySettingsSchema.partial().optional(),
+  feedbackSettings: feedbackSettingsSchema.partial().optional(),
 });
 
 // ---------- Branches ----------
@@ -270,6 +284,10 @@ export const orderUpdateSchema = z.object({
   guests: z.coerce.number().int().min(1).max(50).optional(),
   /** Marks every queued line as sent to the kitchen. */
   sendToKitchen: z.boolean().optional(),
+  /** Attach a guest so they earn points; null detaches. */
+  customerId: objectId.nullable().optional(),
+  /** Loyalty points to spend on this bill; 0 removes the redemption. */
+  redeemPoints: z.coerce.number().int().min(0).max(1_000_000).optional(),
 });
 
 export const orderPaymentSchema = z.object({
@@ -297,6 +315,38 @@ export const visitSchema = z.object({
   branchId: objectId.optional(),
   spend: z.coerce.number().min(0).default(0),
   guests: z.coerce.number().int().min(1).default(1),
+});
+
+export const loyaltyAdjustSchema = z.object({
+  points: z.coerce
+    .number()
+    .int("Whole points only")
+    .min(-100000)
+    .max(100000)
+    .refine((value) => value !== 0, { message: "Enter a number of points" }),
+  note: z.string().trim().min(2, "Say why the balance is changing").max(200),
+});
+
+// ---------- Feedback ----------
+
+export const feedbackSubmitSchema = z.object({
+  rating: z.coerce.number().int().min(1, "Pick a rating").max(5),
+  comment: z.string().trim().max(1000).optional().or(z.literal("")),
+});
+
+export const feedbackUpdateSchema = z
+  .object({
+    reply: z.string().trim().min(2, "Write a reply").max(1000).optional(),
+    isPublic: z.boolean().optional(),
+  })
+  .refine((value) => value.reply !== undefined || value.isPublic !== undefined, {
+    message: "Nothing to update",
+  });
+
+// ---------- Guest portal ----------
+
+export const guestSignInSchema = z.object({
+  email: z.string().trim().email("Enter a valid email"),
 });
 
 // ---------- Staff ----------
@@ -368,3 +418,5 @@ export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type RestaurantProfileInput = z.infer<typeof restaurantProfileSchema>;
 export type BookingSettingsInput = z.infer<typeof bookingSettingsSchema>;
 export type BillingSettingsInput = z.infer<typeof billingSettingsSchema>;
+export type LoyaltySettingsInput = z.infer<typeof loyaltySettingsSchema>;
+export type FeedbackSettingsInput = z.infer<typeof feedbackSettingsSchema>;

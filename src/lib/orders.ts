@@ -10,18 +10,27 @@ export function applyTotals(order: IOrder, billing?: BillingSettings) {
     order.serviceChargePercent = billing.serviceChargePercent;
   }
 
-  const totals = computeBill(
-    order.items.map((item) => ({
-      unitPrice: item.unitPrice,
-      quantity: item.quantity,
-      voided: item.voided,
-    })),
-    {
-      discountAmount: order.discountAmount,
-      vatPercent: order.vatPercent,
-      serviceChargePercent: order.serviceChargePercent,
-    }
-  );
+  const lines = order.items.map((item) => ({
+    unitPrice: item.unitPrice,
+    quantity: item.quantity,
+    voided: item.voided,
+  }));
+  const charges = {
+    discountAmount: order.discountAmount,
+    loyaltyDiscount: order.loyaltyDiscount ?? 0,
+    vatPercent: order.vatPercent,
+    serviceChargePercent: order.serviceChargePercent,
+  };
+  let totals = computeBill(lines, charges);
+
+  // Points are redeemed whole: if the bill shrank below their value (a dish
+  // removed, a bigger discount), drop the redemption instead of silently
+  // spending points for less than they are worth.
+  if (totals.loyaltyDiscount < charges.loyaltyDiscount) {
+    order.loyaltyPointsRedeemed = 0;
+    order.loyaltyDiscount = 0;
+    totals = computeBill(lines, { ...charges, loyaltyDiscount: 0 });
+  }
 
   order.subtotal = totals.subtotal;
   order.discountAmount = totals.discountAmount;

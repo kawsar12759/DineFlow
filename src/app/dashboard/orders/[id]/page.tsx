@@ -25,9 +25,10 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PayDialog } from "@/components/dashboard/orders/pay-dialog";
+import { GuestLoyalty } from "@/components/dashboard/orders/guest-loyalty";
 import { useDebounce } from "@/hooks/use-debounce";
 import { formatCurrency } from "@/lib/utils";
-import { MENU_CATEGORIES } from "@/lib/constants";
+import { MENU_CATEGORIES, type LoyaltySettings } from "@/lib/constants";
 
 interface OrderItem {
   _id: string;
@@ -47,6 +48,10 @@ interface OrderDetail {
   guests?: number;
   items: OrderItem[];
   discountAmount: number;
+  loyaltyPointsRedeemed?: number;
+  loyaltyDiscount?: number;
+  loyaltyPointsEarned?: number;
+  reservationId?: string;
   vatPercent: number;
   serviceChargePercent: number;
   subtotal: number;
@@ -54,7 +59,13 @@ interface OrderDetail {
   serviceChargeAmount: number;
   total: number;
   tableIds: { _id: string; name: string }[];
-  customerId?: { _id: string; name: string } | null;
+  customerId?: {
+    _id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    loyaltyPoints?: number;
+  } | null;
   branchId?: { _id: string; name: string };
   payment?: {
     method: string;
@@ -114,6 +125,12 @@ export default function OrderDetailPage({
       ),
   });
   const menuItems = menuData?.data ?? [];
+
+  const { data: settingsData } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.get<{ loyaltySettings: LoyaltySettings }>("/api/settings"),
+  });
+  const loyalty = settingsData?.data.loyaltySettings;
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["order", id] });
@@ -387,6 +404,12 @@ export default function OrderDetailPage({
                   <dd>−{formatCurrency(order.discountAmount)}</dd>
                 </div>
               )}
+              {(order.loyaltyDiscount ?? 0) > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <dt>Points ({order.loyaltyPointsRedeemed})</dt>
+                  <dd>−{formatCurrency(order.loyaltyDiscount ?? 0)}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">
                   Service charge ({order.serviceChargePercent}%)
@@ -403,6 +426,24 @@ export default function OrderDetailPage({
                 <dd>{formatCurrency(order.total)}</dd>
               </div>
             </dl>
+
+            <GuestLoyalty
+              orderId={order._id}
+              guest={order.customerId ?? null}
+              fromBooking={!!order.reservationId}
+              editable={editable}
+              loyalty={loyalty}
+              pointsRedeemed={order.loyaltyPointsRedeemed ?? 0}
+              payable={Math.max(0, order.subtotal - order.discountAmount)}
+              onChanged={refresh}
+            />
+
+            {order.status === "paid" && (order.loyaltyPointsEarned ?? 0) > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {order.customerId?.name ?? "The guest"} earned{" "}
+                {order.loyaltyPointsEarned} points on this bill.
+              </p>
+            )}
 
             {editable && (
               <>
@@ -464,9 +505,13 @@ export default function OrderDetailPage({
         onOpenChange={setPayOpen}
         orderId={order._id}
         total={order.total}
-        onPaid={() => {
+        onPaid={(paid) => {
           refresh();
-          toast.success("Bill closed");
+          toast.success(
+            paid.loyaltyPointsEarned
+              ? `Bill closed · ${order.customerId?.name ?? "the guest"} earned ${paid.loyaltyPointsEarned} points`
+              : "Bill closed"
+          );
         }}
       />
     </>

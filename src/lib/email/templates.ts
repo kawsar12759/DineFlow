@@ -224,3 +224,78 @@ export function passwordResetEmail(data: {
     text: textVersion(content),
   };
 }
+
+/** Sent after a visit is paid or completed. */
+export function feedbackRequestEmail(data: {
+  guestName: string;
+  restaurantName: string;
+  branchName: string;
+  date: string;
+  url: string;
+  pointsEarned?: number;
+  pointsBalance?: number;
+}): Template {
+  const points =
+    data.pointsEarned && data.pointsEarned > 0
+      ? ` You earned ${data.pointsEarned} loyalty points on this visit${
+          data.pointsBalance !== undefined
+            ? ` — ${data.pointsBalance.toLocaleString("en-IN")} in total`
+            : ""
+        }.`
+      : "";
+  const content = {
+    heading: `How was ${data.restaurantName}?`,
+    intro: `Hi ${data.guestName}, thank you for dining at ${data.branchName} on ${formatDate(`${data.date}T00:00:00Z`)}.${points} We would love to know how it went — it takes a few seconds.`,
+    cta: { label: "Rate your visit", url: data.url },
+    footer: "Your rating goes straight to the restaurant's team.",
+  };
+
+  return {
+    subject: `How was your visit to ${data.restaurantName}?`,
+    html: layout(content),
+    text: textVersion(content),
+  };
+}
+
+/** Sent when the restaurant replies to a guest's feedback. */
+export function feedbackReplyEmail(data: {
+  guestName: string;
+  restaurantName: string;
+  reply: string;
+}): Template {
+  const content = {
+    heading: `${data.restaurantName} replied to your feedback`,
+    intro: `Hi ${data.guestName}, thank you for your feedback. Here is their reply:`,
+    details: [{ label: "Reply", value: escapeHtml(data.reply) }],
+  };
+
+  return {
+    subject: `${data.restaurantName} replied to your feedback`,
+    html: layout(content),
+    text: textVersion({ ...content, details: [{ label: "Reply", value: data.reply }] }),
+  };
+}
+
+/** Passwordless sign-in to the guest portal. */
+export function guestSignInEmail(data: { url: string; expiresInMinutes: number }): Template {
+  const content = {
+    heading: "Your bookings on DineFlow",
+    intro: "Use the link below to see your bookings, loyalty points and visits at every restaurant you have booked with.",
+    cta: { label: "Open my bookings", url: data.url },
+    footer: `This link expires in ${data.expiresInMinutes} minutes. If you did not ask for it, you can ignore this email.`,
+  };
+
+  return {
+    subject: `Sign in to your ${APP_NAME} bookings`,
+    html: layout(content),
+    text: textVersion(content),
+  };
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}

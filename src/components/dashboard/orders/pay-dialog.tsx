@@ -40,7 +40,7 @@ export function PayDialog({
   onOpenChange: (open: boolean) => void;
   orderId: string;
   total: number;
-  onPaid: () => void;
+  onPaid: (order: { loyaltyPointsEarned?: number }) => void;
 }) {
   const [method, setMethod] = useState<Method>("cash");
   const [tendered, setTendered] = useState("");
@@ -56,13 +56,13 @@ export function PayDialog({
 
   const pay = useMutation({
     mutationFn: () =>
-      api.post(`/api/orders/${orderId}/pay`, {
+      api.post<{ loyaltyPointsEarned?: number }>(`/api/orders/${orderId}/pay`, {
         method,
         amount: tendered ? Number(tendered) : undefined,
         reference: reference || undefined,
       }),
-    onSuccess: () => {
-      onPaid();
+    onSuccess: (result) => {
+      onPaid(result.data);
       onOpenChange(false);
     },
     onError: (error) =>

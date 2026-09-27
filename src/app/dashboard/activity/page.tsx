@@ -6,7 +6,9 @@ import {
   CalendarCheck,
   CalendarX,
   Clock,
+  Gift,
   History,
+  MessageSquareHeart,
   Move,
   Settings2,
   UtensilsCrossed,
@@ -40,6 +42,8 @@ const ICONS: { match: string; icon: typeof History }[] = [
   { match: "waitlist", icon: Clock },
   { match: "settings", icon: Settings2 },
   { match: "table", icon: UtensilsCrossed },
+  { match: "feedback", icon: MessageSquareHeart },
+  { match: "loyalty", icon: Gift },
 ];
 
 function iconFor(action: string) {
@@ -86,10 +90,13 @@ export default function ActivityPage() {
           setPage(1);
         }}
       >
-        <TabsList>
+        <TabsList className="h-auto flex-wrap">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="reservation">Bookings</TabsTrigger>
           <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+          <TabsTrigger value="order">Orders</TabsTrigger>
+          <TabsTrigger value="feedback">Feedback</TabsTrigger>
+          <TabsTrigger value="loyalty">Loyalty</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
       </Tabs>

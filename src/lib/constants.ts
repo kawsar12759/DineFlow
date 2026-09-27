@@ -65,6 +65,43 @@ export const DEFAULT_BILLING_SETTINGS = {
   serviceChargePercent: 10,
 } as const;
 
+/**
+ * Loyalty is opt-in per restaurant. Guests earn points on what they pay
+ * for food (after discounts, before VAT and service) and spend them as
+ * taka off a later bill.
+ */
+export const DEFAULT_LOYALTY_SETTINGS = {
+  enabled: false,
+  /** Points earned for every ৳100 spent. */
+  pointsPer100Taka: 5,
+  /** What one point is worth off a bill, in BDT. */
+  pointValueTaka: 1,
+  /** Smallest number of points a guest may redeem at once. */
+  minRedeemPoints: 100,
+};
+
+export type LoyaltySettings = {
+  enabled: boolean;
+  pointsPer100Taka: number;
+  pointValueTaka: number;
+  minRedeemPoints: number;
+};
+
+/** After a visit, guests are emailed a link to rate it. */
+export const DEFAULT_FEEDBACK_SETTINGS = {
+  requestAfterVisit: true,
+  /** Show the average rating and guest comments on the public page. */
+  showOnPublicPage: true,
+};
+
+export type FeedbackSettings = {
+  requestAfterVisit: boolean;
+  showOnPublicPage: boolean;
+};
+
+/** How long after a visit the feedback link keeps working. */
+export const FEEDBACK_WINDOW_DAYS = 30;
+
 export type BillingSettings = {
   vatPercent: number;
   serviceChargePercent: number;

@@ -51,6 +51,9 @@ export function Navbar() {
 
         <div className="hidden items-center gap-2 md:flex">
           <Button variant="ghost" asChild>
+            <Link href="/account">My bookings</Link>
+          </Button>
+          <Button variant="ghost" asChild>
             <Link href="/reserve">Book a table</Link>
           </Button>
           {isDashboardUser ? (
@@ -92,6 +95,11 @@ export function Navbar() {
               </Link>
             ))}
             <div className="mt-3 flex flex-col gap-2">
+              <Button variant="ghost" asChild>
+                <Link href="/account" onClick={() => setMobileOpen(false)}>
+                  My bookings
+                </Link>
+              </Button>
               <Button variant="outline" asChild>
                 <Link href="/login">Sign in</Link>
               </Button>

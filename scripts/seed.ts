@@ -5,7 +5,9 @@
  *
  * Creates a complete demo tenant (Ember & Oak) with branches, menu,
  * staff, customers, and 90 days of reservation + analytics history,
- * plus a second small tenant to prove multi-tenant isolation.
+ * loyalty points and guest feedback, plus a second small tenant to prove
+ * multi-tenant isolation. guest@example.com has booked at both, for the
+ * guest portal at /account.
  */
 import { config } from "dotenv";
 config({ path: ".env.local" });
@@ -22,11 +24,58 @@ import {
   AnalyticsEvent,
   Table,
   Order,
+  Feedback,
+  LoyaltyTransaction,
 } from "../src/models";
 import { computeBill } from "../src/lib/billing";
+import { formatCurrency } from "../src/lib/utils";
 import { freeTablesAt, pickTables, type TableLike } from "../src/lib/tables";
 import { addDaysToKey, dayKeyToDate, todayKey } from "../src/lib/dates";
 import { DAYS_OF_WEEK } from "../src/lib/constants";
+
+/** Ember & Oak's loyalty rate: points per ৳100 of food. */
+const LOYALTY_RATE = 5;
+
+const REVIEW_COMMENTS: Record<number, string[]> = {
+  5: [
+    "The wood-fired lamb was the best I have had in Dhaka. Will be back!",
+    "Lovely evening — our server remembered it was my mother's birthday.",
+    "Perfect from start to finish. The kacchi-style biryani special is a must.",
+    "Great food, warm staff, and the table by the window was ready on time.",
+  ],
+  4: [
+    "Really good food. Mains came out a little slowly on a busy Friday.",
+    "Loved the grilled prawns. A bit loud near the kitchen.",
+    "Nice atmosphere and generous portions. Dessert menu could be bigger.",
+  ],
+  3: [
+    "Food was fine but we waited 20 minutes for our table despite booking.",
+    "Decent, but the steak was overcooked for medium-rare.",
+  ],
+  2: [
+    "Service was slow and our order was mixed up. Food itself was okay.",
+    "Too noisy to talk and the AC was not working in our section.",
+  ],
+  1: ["We booked for 8pm and were not seated until 8:40. Very disappointing."],
+};
+
+const REPLIES: Record<number, string> = {
+  5: "Thank you so much — we look forward to having you back soon!",
+  4: "Thank you! We are adding a second grill cook on weekends to speed things up.",
+  3: "Sorry about the wait. We have changed how we hold tables for bookings.",
+  2: "We are sorry. The manager on duty would like to invite you back as our guest.",
+  1: "This is not the evening we want for anyone. Please call us — we would like to make it right.",
+};
+
+/** Mostly happy guests, with a realistic tail. */
+function randomRating() {
+  const roll = Math.random();
+  if (roll < 0.52) return 5;
+  if (roll < 0.8) return 4;
+  if (roll < 0.9) return 3;
+  if (roll < 0.96) return 2;
+  return 1;
+}
 
 /** Weekly hours helper: same times every day, with optional closed days. */
 function weeklyHours(open: string, close: string, closedDays: number[] = []) {
@@ -92,6 +141,8 @@ async function seed() {
     AnalyticsEvent.deleteMany({}),
     Table.deleteMany({}),
     Order.deleteMany({}),
+    Feedback.deleteMany({}),
+    LoyaltyTransaction.deleteMany({}),
   ]);
   console.log("Cleared existing collections");
 
@@ -121,6 +172,12 @@ async function seed() {
       minLeadMinutes: 60,
       maxDaysAhead: 60,
       autoApprove: false,
+    },
+    loyaltySettings: {
+      enabled: true,
+      pointsPer100Taka: LOYALTY_RATE,
+      pointValueTaka: 1,
+      minRedeemPoints: 100,
     },
     description:
       "Wood-fired continental dining with seasonal Bangladeshi produce, steaks and a signature mocktail bar.",
@@ -311,6 +368,13 @@ async function seed() {
       createdAt: daysAgo(randomInt(0, 90)),
     };
   });
+  // A known guest for the guest portal demo; they also booked at Sakura Table.
+  customerPayloads[0] = {
+    ...customerPayloads[0],
+    name: "Tahmina Akter",
+    email: "guest@example.com",
+    tags: ["Regular"],
+  };
   const customers = await Customer.create(customerPayloads);
   console.log(`Created ${customers.length} customers`);
 
@@ -324,8 +388,14 @@ async function seed() {
   const SERVICE_PERCENT = 10;
   const customerStats = new Map<
     string,
-    { visits: { date: Date; branchId: Types.ObjectId; spend: number; guests: number }[]; spend: number }
+    {
+      visits: { date: Date; branchId: Types.ObjectId; spend: number; guests: number }[];
+      spend: number;
+      points: number;
+    }
   >();
+  const loyaltyTransactions: Record<string, unknown>[] = [];
+  const feedbackDocs: Record<string, unknown>[] = [];
 
   for (let day = 90; day >= -7; day--) {
     const date = daysAgo(day);
@@ -483,10 +553,58 @@ async function seed() {
         reservations[reservations.length - 1].estimatedSpend = totals.total;
         reservations[reservations.length - 1].orderId = orderId;
 
-        const stats = customerStats.get(customer._id.toString()) ?? { visits: [], spend: 0 };
+        const stats = customerStats.get(customer._id.toString()) ?? {
+          visits: [],
+          spend: 0,
+          points: 0,
+        };
         stats.visits.push({ date, branchId: branch._id, spend: totals.total, guests });
         stats.spend += totals.total;
+
+        // Points on food after discounts, like the till awards them.
+        const earned = Math.floor((totals.taxableAmount / 100) * LOYALTY_RATE);
+        stats.points += earned;
+        orders[orders.length - 1].loyaltyPointsEarned = earned;
+        loyaltyTransactions.push({
+          restaurantId: restaurant._id,
+          customerId: customer._id,
+          type: "earn",
+          points: earned,
+          balanceAfter: stats.points,
+          orderId,
+          note: `Order #${orderNumber}, ${formatCurrency(totals.total)}`,
+          createdAt: date,
+        });
         customerStats.set(customer._id.toString(), stats);
+
+        // About 40% of guests from the last two months rated their visit.
+        if (day >= 1 && day <= 60) {
+          reservations[reservations.length - 1].feedbackRequestedAt = date;
+          if (Math.random() < 0.4) {
+            const rating = randomRating();
+            // Reviews and replies come after the visit, but never in the future.
+            const now = Date.now();
+            const reviewedAt = new Date(
+              Math.min(date.getTime() + randomInt(10, 30) * 3_600_000, now - 3_600_000)
+            );
+            const repliedAt = new Date(Math.min(reviewedAt.getTime() + 86_400_000, now));
+            const replied = Math.random() < (rating <= 3 ? 0.8 : 0.25);
+            feedbackDocs.push({
+              restaurantId: restaurant._id,
+              branchId: branch._id,
+              reservationId,
+              customerId: customer._id,
+              rating,
+              comment: Math.random() < 0.65 ? pick(REVIEW_COMMENTS[rating]) : undefined,
+              isPublic: true,
+              reply: replied
+                ? { body: REPLIES[rating], repliedAt }
+                : undefined,
+              createdAt: reviewedAt,
+              updatedAt: reviewedAt,
+            });
+          }
+        }
 
         events.push({
           restaurantId: restaurant._id,
@@ -513,11 +631,18 @@ async function seed() {
           visitHistory: stats.visits,
           totalSpend: stats.spend,
           visitCount: stats.visits.length,
+          loyaltyPoints: stats.points,
         },
       }
     );
   }
   console.log("Applied customer visit history");
+
+  await LoyaltyTransaction.insertMany(loyaltyTransactions);
+  console.log(`Created ${loyaltyTransactions.length} loyalty transactions`);
+
+  await Feedback.insertMany(feedbackDocs);
+  console.log(`Created ${feedbackDocs.length} guest reviews`);
 
   // Menu view events (popularity)
   for (const item of menuItems) {
@@ -563,7 +688,7 @@ async function seed() {
     hours: weeklyHours("17:30", "23:00"),
   });
 
-  await Table.create(
+  const sakuraTables = await Table.create(
     Array.from({ length: 10 }, (_, index) => ({
       restaurantId: restaurant2._id,
       branchId: branch2._id,
@@ -579,11 +704,23 @@ async function seed() {
     { restaurantId: restaurant2._id, name: "Yuzu Sorbet", description: "House yuzu sorbet with sesame tuile", price: 450, category: "Desserts", allergens: ["sesame"], preparationTime: 5, availability: true, popularityScore: 30 },
   ]);
 
-  await Customer.create({
+  const sakuraGuest = await Customer.create({
     restaurantId: restaurant2._id,
-    name: "Test Guest",
+    name: "Tahmina Akter",
     email: "guest@example.com",
     visitCount: 0,
+  });
+
+  // An upcoming booking so the guest portal shows two restaurants.
+  await Reservation.create({
+    restaurantId: restaurant2._id,
+    branchId: branch2._id,
+    customerId: sakuraGuest._id,
+    tableIds: [sakuraTables[6]._id],
+    date: daysAgo(-3),
+    time: "19:30",
+    guests: 2,
+    status: "approved",
   });
 
   console.log(`Created second tenant (${restaurant2.name}) with branch ${branch2.name}`);
@@ -594,6 +731,8 @@ async function seed() {
   console.log("  manager@ember-oak.com  — Manager, Gulshan");
   console.log("  staff@ember-oak.com    — Staff, Gulshan");
   console.log("  owner@sakura-table.com — Owner, Sakura Table (isolation test)");
+  console.log("Guest portal: /account with guest@example.com (sign-in link");
+  console.log("  is printed in the dev server log when RESEND_API_KEY is unset)");
   console.log("──────────────────────────────────────────");
 
   await mongoose.disconnect();

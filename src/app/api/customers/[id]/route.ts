@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { Customer, Reservation } from "@/models";
+import { Customer, Feedback, LoyaltyTransaction, Reservation, Restaurant } from "@/models";
 import { customerUpdateSchema } from "@/lib/validations";
 import {
   ApiError,
@@ -10,6 +10,7 @@ import {
   requireTenantSession,
   tenantFilter,
 } from "@/lib/api-helpers";
+import { loyaltySettings } from "@/lib/loyalty";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -19,7 +20,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const customerId = parseObjectId(id, "customer id");
 
-    const [customer, reservations] = await Promise.all([
+    const [customer, reservations, loyaltyHistory, feedback, restaurant] = await Promise.all([
       Customer.findOne({ _id: customerId, ...tenantFilter(ctx) })
         .populate("visitHistory.branchId", "name")
         .lean(),
@@ -28,11 +29,28 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         .limit(20)
         .populate("branchId", "name")
         .lean(),
+      LoyaltyTransaction.find({ customerId, ...tenantFilter(ctx) })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .populate("actorId", "name")
+        .lean(),
+      Feedback.find({ customerId, ...tenantFilter(ctx) })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate("branchId", "name")
+        .lean(),
+      Restaurant.findById(ctx.restaurantId).select("loyaltySettings").lean(),
     ]);
 
     if (!customer) throw new ApiError("Customer not found", 404);
 
-    return ok({ customer, reservations });
+    return ok({
+      customer,
+      reservations,
+      loyaltyHistory,
+      feedback,
+      loyalty: loyaltySettings(restaurant?.loyaltySettings),
+    });
   } catch (error) {
     return handleApiError(error);
   }

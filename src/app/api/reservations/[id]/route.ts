@@ -19,6 +19,7 @@ import {
   sendBookingCancelled,
 } from "@/lib/email/booking-emails";
 import { formatTime } from "@/lib/utils";
+import { requestFeedback } from "@/lib/feedback";
 import {
   ACTIVE_RESERVATION_STATUSES,
   RESERVATION_TRANSITIONS,
@@ -254,6 +255,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           amount: spend,
         });
       }
+
+      await requestFeedback(reservation._id, { origin: request.nextUrl.origin });
     }
 
     // No-shows count against the customer's profile.

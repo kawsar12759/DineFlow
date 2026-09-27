@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, CalendarX, Clock, RefreshCw, UtensilsCrossed } from "lucide-react";
+import { Bell, CalendarX, Clock, RefreshCw, Star, UtensilsCrossed } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,7 @@ const ICONS: Record<string, typeof Bell> = {
   reservation_cancelled: CalendarX,
   reservation_changed: RefreshCw,
   waitlist_added: Clock,
+  feedback_received: Star,
 };
 
 /** "just now", "12 min ago", "3 h ago", "2 d ago". */

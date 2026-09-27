@@ -12,6 +12,19 @@ interface Template {
   text: string;
 }
 
+/**
+ * Guest names, notes and replies are typed by people, so everything placed
+ * in the HTML is escaped here once. The text version needs no escaping.
+ */
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function layout({
   heading,
   intro,
@@ -28,23 +41,23 @@ function layout({
   const rows = (details ?? [])
     .map(
       (detail) =>
-        `<p style="margin:0 0 6px;font-size:14px;color:#334155"><strong style="color:#0f172a">${detail.label}:</strong> ${detail.value}</p>`
+        `<p style="margin:0 0 6px;font-size:14px;color:#334155"><strong style="color:#0f172a">${escapeHtml(detail.label)}:</strong> ${escapeHtml(detail.value)}</p>`
     )
     .join("");
 
   const button = cta
-    ? `<p style="margin:24px 0"><a href="${cta.url}" style="background:#0f766e;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-size:14px;display:inline-block">${cta.label}</a></p>
-       <p style="margin:0 0 16px;font-size:12px;color:#64748b">Or paste this link into your browser:<br>${cta.url}</p>`
+    ? `<p style="margin:24px 0"><a href="${escapeHtml(cta.url)}" style="background:#0f766e;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-size:14px;display:inline-block">${escapeHtml(cta.label)}</a></p>
+       <p style="margin:0 0 16px;font-size:12px;color:#64748b">Or paste this link into your browser:<br>${escapeHtml(cta.url)}</p>`
     : "";
 
   return `<!doctype html>
 <html><body style="margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:28px">
-    <h1 style="margin:0 0 12px;font-size:20px;color:#0f172a">${heading}</h1>
-    <p style="margin:0 0 18px;font-size:14px;line-height:22px;color:#334155">${intro}</p>
+    <h1 style="margin:0 0 12px;font-size:20px;color:#0f172a">${escapeHtml(heading)}</h1>
+    <p style="margin:0 0 18px;font-size:14px;line-height:22px;color:#334155">${escapeHtml(intro)}</p>
     ${rows}
     ${button}
-    ${footer ? `<p style="margin:18px 0 0;font-size:12px;color:#64748b">${footer}</p>` : ""}
+    ${footer ? `<p style="margin:18px 0 0;font-size:12px;color:#64748b">${escapeHtml(footer)}</p>` : ""}
   </div>
   <p style="max-width:560px;margin:14px auto 0;font-size:12px;color:#94a3b8;text-align:center">Sent by ${APP_NAME}</p>
 </body></html>`;
@@ -266,13 +279,13 @@ export function feedbackReplyEmail(data: {
   const content = {
     heading: `${data.restaurantName} replied to your feedback`,
     intro: `Hi ${data.guestName}, thank you for your feedback. Here is their reply:`,
-    details: [{ label: "Reply", value: escapeHtml(data.reply) }],
+    details: [{ label: "Reply", value: data.reply }],
   };
 
   return {
     subject: `${data.restaurantName} replied to your feedback`,
     html: layout(content),
-    text: textVersion({ ...content, details: [{ label: "Reply", value: data.reply }] }),
+    text: textVersion(content),
   };
 }
 
@@ -290,12 +303,4 @@ export function guestSignInEmail(data: { url: string; expiresInMinutes: number }
     html: layout(content),
     text: textVersion(content),
   };
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

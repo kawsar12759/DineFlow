@@ -21,6 +21,9 @@ import { requestFeedback } from "@/lib/feedback";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+/** A claim older than this is from a request that died; it can be taken over. */
+const PAYING_LOCK_MS = 60_000;
+
 /**
  * Closes the bill. This is where revenue becomes real: the paid total is
  * recorded on the order, on the guest's profile, and on the booking, which
@@ -61,66 +64,89 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const restaurant = await Restaurant.findById(ctx.restaurantId)
-      .select("loyaltySettings")
-      .lean();
-    const loyalty = loyaltySettings(restaurant?.loyaltySettings);
-
-    // Spend the points first: if the guest no longer has them (spent at
-    // another till), the bill must not close at the discounted price.
-    const redeemed = order.customerId ? order.loyaltyPointsRedeemed ?? 0 : 0;
-    if (redeemed > 0) {
-      const spent = await changePoints({
-        restaurantId: ctx.restaurantId,
-        customerId: order.customerId!,
-        type: "redeem",
-        points: -redeemed,
-        orderId: order._id,
-        note: `${formatCurrency(order.loyaltyDiscount)} off order #${order.orderNumber}`,
-        actorId: ctx.userId,
-      });
-      if (!spent) {
-        throw new ApiError(
-          "The guest no longer has enough points — remove the redemption and try again",
-          409
-        );
-      }
+    // Claim the bill before touching money or points: a second till pressing
+    // "pay" at the same moment gets a clear refusal instead of paying twice.
+    const claimed = await Order.updateOne(
+      {
+        _id: order._id,
+        status: "open",
+        $or: [
+          { payingAt: { $exists: false } },
+          { payingAt: { $lt: new Date(Date.now() - PAYING_LOCK_MS) } },
+        ],
+      },
+      { $set: { payingAt: new Date() } }
+    );
+    if (claimed.modifiedCount === 0) {
+      throw new ApiError("This bill is already being closed at another till", 409);
     }
 
-    // Points are earned on the food, after discounts, before VAT and service.
-    const earned = order.customerId
-      ? pointsForSpend(totals.taxableAmount, loyalty)
-      : 0;
-    order.loyaltyPointsEarned = earned;
-
-    order.status = "paid";
-    order.closedBy = new Types.ObjectId(ctx.userId);
-    order.payment = {
-      method: input.method,
-      amount: totals.total,
-      tendered: tendered > totals.total ? tendered : undefined,
-      changeGiven:
-        tendered > totals.total
-          ? Math.round((tendered - totals.total) * 100) / 100
-          : undefined,
-      reference: input.reference || undefined,
-      paidAt: new Date(),
-      receivedBy: order.closedBy,
-    };
+    let earned = 0;
     try {
-      await order.save();
-    } catch (error) {
+      const restaurant = await Restaurant.findById(ctx.restaurantId)
+        .select("loyaltySettings")
+        .lean();
+      const loyalty = loyaltySettings(restaurant?.loyaltySettings);
+
+      // Spend the points first: if the guest no longer has them (spent at
+      // another till), the bill must not close at the discounted price.
+      const redeemed = order.customerId ? order.loyaltyPointsRedeemed ?? 0 : 0;
       if (redeemed > 0) {
-        await changePoints({
+        const spent = await changePoints({
           restaurantId: ctx.restaurantId,
           customerId: order.customerId!,
-          type: "adjust",
-          points: redeemed,
+          type: "redeem",
+          points: -redeemed,
           orderId: order._id,
-          note: `Refunded: order #${order.orderNumber} could not be closed`,
+          note: `${formatCurrency(order.loyaltyDiscount)} off order #${order.orderNumber}`,
+          actorId: ctx.userId,
         });
+        if (!spent) {
+          throw new ApiError(
+            "The guest no longer has enough points — remove the redemption and try again",
+            409
+          );
+        }
       }
-      throw error;
+
+      // Points are earned on the food, after discounts, before VAT and service.
+      earned = order.customerId
+        ? pointsForSpend(totals.taxableAmount, loyalty)
+        : 0;
+      order.loyaltyPointsEarned = earned;
+
+      order.status = "paid";
+      order.closedBy = new Types.ObjectId(ctx.userId);
+      order.payment = {
+        method: input.method,
+        amount: totals.total,
+        tendered: tendered > totals.total ? tendered : undefined,
+        changeGiven:
+          tendered > totals.total
+            ? Math.round((tendered - totals.total) * 100) / 100
+            : undefined,
+        reference: input.reference || undefined,
+        paidAt: new Date(),
+        receivedBy: order.closedBy,
+      };
+      try {
+        await order.save();
+      } catch (error) {
+        if (redeemed > 0) {
+          await changePoints({
+            restaurantId: ctx.restaurantId,
+            customerId: order.customerId!,
+            type: "adjust",
+            points: redeemed,
+            orderId: order._id,
+            note: `Refunded: order #${order.orderNumber} could not be closed`,
+          });
+        }
+        throw error;
+      }
+    } finally {
+      // Release the claim; if the bill did not close, the tills can retry.
+      await Order.updateOne({ _id: order._id }, { $unset: { payingAt: "" } });
     }
 
     if (earned > 0) {

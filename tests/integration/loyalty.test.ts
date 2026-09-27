@@ -218,6 +218,37 @@ describe("redeeming points", () => {
     expect((await Customer.findById(seed.customerA._id).lean())?.loyaltyPoints).toBe(50);
   });
 
+  it("takes payment and points once when two tills pay at the same moment", async () => {
+    // Enough points for every till to redeem, so only the claim stops them.
+    await Customer.updateOne({ _id: seed.customerA._id }, { $set: { loyaltyPoints: 1000 } });
+    signInAs(seed.ownerA);
+    const id = await orderWithDish();
+    await patchOrder(id, { customerId: seed.customerA._id.toString(), redeemPoints: 200 });
+
+    const responses = await Promise.all([pay(id), pay(id), pay(id)]);
+    const statuses = responses.map((response) => response.status).sort();
+    expect(statuses).toEqual([200, 409, 409]);
+
+    const customer = await Customer.findById(seed.customerA._id).lean();
+    // 1000 − 200 redeemed once + 40 earned once.
+    expect(customer?.loyaltyPoints).toBe(840);
+    expect(customer?.visitCount).toBe(1);
+    const order = await Order.findById(id).lean();
+    expect(order?.status).toBe("paid");
+    expect(order?.payingAt).toBeUndefined();
+  });
+
+  it("lets the bill be paid again after a failed attempt", async () => {
+    signInAs(seed.ownerA);
+    const id = await orderWithDish();
+    await patchOrder(id, { customerId: seed.customerA._id.toString(), redeemPoints: 200 });
+    await Customer.updateOne({ _id: seed.customerA._id }, { $set: { loyaltyPoints: 50 } });
+    expect((await pay(id)).status).toBe(409);
+
+    await patchOrder(id, { redeemPoints: 0 });
+    expect((await pay(id)).status).toBe(200);
+  });
+
   it("clears the redemption when the guest changes", async () => {
     signInAs(seed.ownerA);
     const id = await orderWithDish();

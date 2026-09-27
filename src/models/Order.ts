@@ -76,6 +76,8 @@ export interface IOrder extends Document {
   };
   openedBy?: Types.ObjectId;
   closedBy?: Types.ObjectId;
+  /** Set while a till is closing the bill, so two tills cannot both take payment. */
+  payingAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -135,6 +137,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     openedBy: { type: Schema.Types.ObjectId, ref: "User" },
     closedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    payingAt: { type: Date },
   },
   { timestamps: true }
 );

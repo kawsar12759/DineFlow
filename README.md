@@ -37,6 +37,10 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - Bills in BDT with service charge, VAT and discounts; paid by cash, card, bKash, Nagad or Rocket, with change worked out for you
 - Feedback: every review with rating summary and filters; owners and managers reply (emailed to the guest) or hide a review from the public page; a notification for each new review
 - Loyalty points: owners set the earn rate, point value and redemption minimum; guests attached to a bill earn points on the food they pay for, and staff redeem points as taka off at the till; each guest's balance has a full ledger, with manual adjustments by managers
+- Billing: Starter, Growth and Enterprise plans with branch, staff, analytics and loyalty limits enforced on the server; owners pay monthly or yearly through SSLCommerz (bKash, Nagad, Rocket, cards, net banking) and get a numbered invoice and an emailed receipt
+- New restaurants get a 14-day free trial. When a paid plan ends there is a 7-day grace period; after that the dashboard becomes read-only and online booking pauses until the owner renews, with reminder emails before and after
+- Payments are only counted after SSLCommerz's validation service confirms them, whether the owner's browser returns first or SSLCommerz's IPN does; payments SSLCommerz flags as risky wait for DineFlow to approve them
+- Admin console at `/admin` for DineFlow's own team: every restaurant's plan and status, monthly recurring revenue, payments, and support actions (free days, plan change, suspend or reinstate), each recorded in the restaurant's activity log
 - Personal profile page with password change, and a light/dark theme toggle
 - Analytics: revenue, reservation, customer, branch, and menu popularity aggregations (server-side MongoDB pipelines)
 
@@ -86,6 +90,12 @@ Integration tests call the real route handlers against an in-memory MongoDB (`mo
 | `staff@ember-oak.com` | Staff — reservations, menu availability only |
 
 Guest portal: open `/account` and enter `guest@example.com`. Without `RESEND_API_KEY` the sign-in link is printed in the dev server log.
+
+DineFlow admin: `admin@dineflow.app` (same password) opens `/admin`. Ember & Oak is a paying Growth customer; Sakura Table (`owner@sakura-table.com`) is on a trial that ends in 5 days.
+
+### Subscription payments
+
+Add SSLCommerz sandbox credentials to `.env.local` (see `.env.example`) and pay from Dashboard → Billing. The sandbox's test page lets you choose *Success*, *Success with risk* (held for review in `/admin`) or *Failed*. SSLCommerz's IPN needs a public URL, so locally it cannot reach you; the payment is still confirmed when the browser returns. Run the daily jobs with `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/subscriptions`.
 | `owner@sakura-table.com` | Owner of a second tenant (verifies isolation) |
 
 ## Project structure

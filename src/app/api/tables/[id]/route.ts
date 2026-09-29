@@ -8,7 +8,7 @@ import {
   ok,
   parseBody,
   parseObjectId,
-  requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { ACTIVE_RESERVATION_STATUSES } from "@/lib/constants";
@@ -18,7 +18,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
     const input = await parseBody(request, tableUpdateSchema);
 
@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
     const tableId = parseObjectId(id, "table id");
 

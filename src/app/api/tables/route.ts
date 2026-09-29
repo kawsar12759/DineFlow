@@ -10,6 +10,7 @@ import {
   parseBody,
   parseObjectId,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const input = await parseBody(request, tableSchema);
 
     assertBranchAccess(ctx, input.branchId);

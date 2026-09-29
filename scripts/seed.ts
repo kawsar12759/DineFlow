@@ -26,6 +26,8 @@ import {
   Order,
   Feedback,
   LoyaltyTransaction,
+  SubscriptionPayment,
+  Counter,
 } from "../src/models";
 import { computeBill } from "../src/lib/billing";
 import { formatCurrency } from "../src/lib/utils";
@@ -142,6 +144,8 @@ async function seed() {
     Table.deleteMany({}),
     Order.deleteMany({}),
     Feedback.deleteMany({}),
+    SubscriptionPayment.deleteMany({}),
+    Counter.deleteMany({}),
     LoyaltyTransaction.deleteMany({}),
   ]);
   console.log("Cleared existing collections");
@@ -161,6 +165,9 @@ async function seed() {
     slug: "ember-and-oak",
     ownerId: owner._id,
     subscriptionPlan: "growth",
+    // A paying customer: three monthly Growth payments, paid up for 20 days more.
+    onTrial: false,
+    subscriptionEndsAt: new Date(Date.now() + 20 * 86_400_000),
     cuisine: "Wood-fired Continental",
     phone: "+880 1711-201100",
     email: "hello@ember-oak.com",
@@ -660,6 +667,43 @@ async function seed() {
   await AnalyticsEvent.insertMany(events);
   console.log(`Created ${events.length} analytics events`);
 
+  // ---------- Subscription payments for Ember & Oak ----------
+  const year = new Date().getUTCFullYear();
+  const growthMonthly = 7999;
+  await SubscriptionPayment.insertMany(
+    [70, 40, 10].map((paidDaysAgo, index) => {
+      const paidAt = new Date(Date.now() - paidDaysAgo * 86_400_000);
+      const periodStart = paidAt;
+      return {
+        restaurantId: restaurant._id,
+        plan: "growth",
+        period: "monthly",
+        amount: growthMonthly,
+        tranId: `DFSEED${index + 1}`,
+        status: "paid",
+        gateway: "sslcommerz",
+        invoiceNumber: `DF-${year}-${String(index + 1).padStart(6, "0")}`,
+        periodStart,
+        periodEnd: new Date(periodStart.getTime() + 30 * 86_400_000),
+        paidAt,
+        initiatedBy: owner._id,
+        gatewayDetails: { cardType: pick(["BKASH-BKash", "NAGAD-Nagad", "VISA-Dutch Bangla"]), riskLevel: "0" },
+        createdAt: paidAt,
+        updatedAt: paidAt,
+      };
+    })
+  );
+  await Counter.create({ _id: `invoice-${year}`, value: 3 });
+  console.log("Created 3 subscription payments");
+
+  // ---------- DineFlow operator ----------
+  await User.create({
+    name: "DineFlow Support",
+    email: "admin@dineflow.app",
+    password,
+    role: "super_admin",
+  });
+
   // ---------- Tenant 2: small isolation-proof tenant ----------
   const owner2 = await User.create({
     name: "Kenji Watanabe",
@@ -672,6 +716,9 @@ async function seed() {
     slug: "sakura-table",
     ownerId: owner2._id,
     subscriptionPlan: "starter",
+    // Still on the free trial, ending in 5 days, to show the renewal banner.
+    onTrial: true,
+    subscriptionEndsAt: new Date(Date.now() + 5 * 86_400_000),
     cuisine: "Japanese",
     isPublished: true,
     bookingSettings: { autoApprove: true, maxPartySize: 8 },
@@ -730,7 +777,8 @@ async function seed() {
   console.log("  owner@ember-oak.com    — Owner, Ember & Oak");
   console.log("  manager@ember-oak.com  — Manager, Gulshan");
   console.log("  staff@ember-oak.com    — Staff, Gulshan");
-  console.log("  owner@sakura-table.com — Owner, Sakura Table (isolation test)");
+  console.log("  owner@sakura-table.com — Owner, Sakura Table (trial ends in 5 days)");
+  console.log("  admin@dineflow.app     — DineFlow super admin (/admin)");
   console.log("Guest portal: /account with guest@example.com (sign-in link");
   console.log("  is printed in the dev server log when RESEND_API_KEY is unset)");
   console.log("──────────────────────────────────────────");

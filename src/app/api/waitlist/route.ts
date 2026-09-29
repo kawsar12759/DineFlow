@@ -10,6 +10,7 @@ import {
   parseBody,
   parseObjectId,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { dayKeyToDate, isDayKey, todayKey } from "@/lib/dates";
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const input = await parseBody(request, waitlistSchema);
 
     assertBranchAccess(ctx, input.branchId);

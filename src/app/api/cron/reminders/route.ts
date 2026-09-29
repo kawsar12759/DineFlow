@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { cronAuthError } from "@/lib/cron";
 import { connectDB } from "@/lib/db";
 import { Reservation } from "@/models";
 import { handleApiError, ok } from "@/lib/api-helpers";
@@ -11,23 +12,8 @@ import { sendBookingReminder } from "@/lib/email/booking-emails";
  */
 export async function GET(request: NextRequest) {
   try {
-    const secret = process.env.CRON_SECRET;
-    if (!secret) {
-      return NextResponse.json(
-        { success: false, error: "CRON_SECRET is not configured" },
-        { status: 503 }
-      );
-    }
-
-    const provided =
-      request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
-      request.nextUrl.searchParams.get("secret");
-    if (provided !== secret) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const refused = cronAuthError(request);
+    if (refused) return refused;
 
     await connectDB();
 

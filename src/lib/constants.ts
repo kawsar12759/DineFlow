@@ -201,6 +201,61 @@ export const PLAN_MONTHLY_PRICE: Record<SubscriptionPlan, number | null> = {
   enterprise: null,
 };
 
+export const BILLING_PERIODS = ["monthly", "yearly"] as const;
+export type BillingPeriod = (typeof BILLING_PERIODS)[number];
+
+/** A year costs ten months: two months free for paying up front. */
+export const YEARLY_MONTHS_CHARGED = 10;
+
+export interface PlanDefinition {
+  name: string;
+  /** null = unlimited. */
+  maxBranches: number | null;
+  /** Managers and staff; the owner is not counted. null = unlimited. */
+  maxStaff: number | null;
+  /** How far back analytics charts can look, in days. */
+  analyticsDays: number;
+  loyalty: boolean;
+  /** Can be bought online; Enterprise is arranged with sales. */
+  selfServe: boolean;
+}
+
+/**
+ * What each plan includes. The pricing page and the server-side limit
+ * checks both read from here, so they cannot disagree.
+ */
+export const PLANS: Record<SubscriptionPlan, PlanDefinition> = {
+  starter: {
+    name: "Starter",
+    maxBranches: 1,
+    maxStaff: 2,
+    analyticsDays: 30,
+    loyalty: false,
+    selfServe: true,
+  },
+  growth: {
+    name: "Growth",
+    maxBranches: 10,
+    maxStaff: null,
+    analyticsDays: 90,
+    loyalty: true,
+    selfServe: true,
+  },
+  enterprise: {
+    name: "Enterprise",
+    maxBranches: null,
+    maxStaff: null,
+    analyticsDays: 90,
+    loyalty: true,
+    selfServe: false,
+  },
+};
+
+/** New restaurants get this long free, on the Starter plan. */
+export const TRIAL_DAYS = 14;
+/** After a paid period ends, the restaurant keeps working this long. */
+export const GRACE_DAYS = 7;
+
 export const ANALYTICS_EVENT_TYPES = [
   "reservation_created",
   "reservation_status_changed",

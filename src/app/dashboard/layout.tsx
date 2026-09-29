@@ -5,6 +5,8 @@ import { Sidebar, MobileNav } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { DASHBOARD_ROLES } from "@/lib/constants";
 import { loadActiveUser } from "@/lib/api-helpers";
+import { subscriptionState, type SubscriptionState } from "@/lib/subscription";
+import { SubscriptionBanner } from "@/components/dashboard/subscription-banner";
 
 export default async function DashboardLayout({
   children,
@@ -25,16 +27,25 @@ export default async function DashboardLayout({
 
   const { role, restaurantId, name, email } = user;
 
+  // DineFlow operators have no restaurant of their own.
+  if (role === "super_admin") {
+    redirect("/admin");
+  }
+
   if (!DASHBOARD_ROLES.includes(role)) {
     redirect("/");
   }
 
   let restaurantName: string | undefined;
+  let subscription: SubscriptionState | undefined;
   if (restaurantId) {
     const restaurant = await Restaurant.findById(restaurantId)
-      .select("name")
+      .select(
+        "name subscriptionPlan subscriptionEndsAt onTrial suspendedAt suspendedReason createdAt"
+      )
       .lean();
     restaurantName = restaurant?.name;
+    if (restaurant) subscription = subscriptionState(restaurant);
   }
 
   return (
@@ -48,6 +59,9 @@ export default async function DashboardLayout({
           restaurantName={restaurantName}
         />
         <main className="flex-1 space-y-6 p-4 pb-24 sm:p-6 lg:pb-6">
+          {subscription && (
+            <SubscriptionBanner state={subscription} isOwner={role === "owner"} />
+          )}
           {children}
         </main>
       </div>

@@ -37,7 +37,7 @@ export function Topbar({ userName, userEmail, role, restaurantName }: TopbarProp
   const canManageSettings = role === "owner" || role === "super_admin";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
+    <header className="sticky top-0 z-30 flex print:hidden h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
       <div className="min-w-0">
         <h2 className="truncate text-sm font-semibold">
           {restaurantName ?? "Your Restaurant"}

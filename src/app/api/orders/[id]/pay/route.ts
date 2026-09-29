@@ -9,14 +9,14 @@ import {
   ok,
   parseBody,
   parseObjectId,
-  requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { applyTotals } from "@/lib/orders";
 import { recordActivity } from "@/lib/activity";
 import { trackEvent } from "@/lib/analytics";
 import { formatCurrency } from "@/lib/utils";
-import { changePoints, loyaltySettings, pointsForSpend } from "@/lib/loyalty";
+import { changePoints, effectiveLoyalty, pointsForSpend } from "@/lib/loyalty";
 import { requestFeedback } from "@/lib/feedback";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -32,7 +32,7 @@ const PAYING_LOCK_MS = 60_000;
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id } = await params;
     const input = await parseBody(request, orderPaymentSchema);
 
@@ -84,9 +84,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     let earned = 0;
     try {
       const restaurant = await Restaurant.findById(ctx.restaurantId)
-        .select("loyaltySettings")
+        .select("loyaltySettings subscriptionPlan")
         .lean();
-      const loyalty = loyaltySettings(restaurant?.loyaltySettings);
+      const loyalty = effectiveLoyalty(restaurant);
 
       // Spend the points first: if the guest no longer has them (spent at
       // another till), the bill must not close at the discounted price.

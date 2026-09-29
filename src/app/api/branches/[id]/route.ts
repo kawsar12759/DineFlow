@@ -9,8 +9,10 @@ import {
   parseObjectId,
   branchFilter,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
+import { assertCanAddBranch } from "@/lib/plan-limits";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -35,12 +37,21 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
     const input = await parseBody(request, branchUpdateSchema);
+    const branchId = parseObjectId(id, "branch id");
+
+    // Switching a closed branch back on counts towards the plan's limit.
+    if (input.isActive === true) {
+      const current = await Branch.findOne({ _id: branchId, ...tenantFilter(ctx) })
+        .select("isActive")
+        .lean();
+      if (current && !current.isActive) await assertCanAddBranch(ctx);
+    }
 
     const branch = await Branch.findOneAndUpdate(
-      { _id: parseObjectId(id, "branch id"), ...tenantFilter(ctx) },
+      { _id: branchId, ...tenantFilter(ctx) },
       { $set: input },
       { new: true, runValidators: true }
     ).lean();
@@ -55,7 +66,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner"]);
+    const ctx = await requireWriteSession(["super_admin", "owner"]);
     const { id } = await params;
     const branchId = parseObjectId(id, "branch id");
 

@@ -56,6 +56,7 @@ interface RestaurantSettings {
   billingSettings: BillingSettings;
   loyaltySettings: LoyaltySettings;
   feedbackSettings: FeedbackSettings;
+  planIncludesLoyalty: boolean;
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -437,7 +438,12 @@ export default function SettingsPage() {
       <Card>
         <form
           onSubmit={loyaltyForm.handleSubmit((values) =>
-            save.mutate({ loyaltySettings: values })
+            save.mutate({
+              loyaltySettings: {
+                ...values,
+                enabled: values.enabled && settings.planIncludesLoyalty,
+              },
+            })
           )}
         >
           <CardHeader>
@@ -449,6 +455,15 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!settings.planIncludesLoyalty && (
+              <p className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
+                Loyalty points are part of the Growth plan.{" "}
+                <Link href="/dashboard/billing" className="text-primary hover:underline">
+                  Upgrade in Billing
+                </Link>{" "}
+                to turn them on. Guests keep any points they already have.
+              </p>
+            )}
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <Label htmlFor="loyaltyEnabled">Run a loyalty programme</Label>
@@ -460,7 +475,8 @@ export default function SettingsPage() {
               </div>
               <Switch
                 id="loyaltyEnabled"
-                checked={!!loyaltyOn}
+                disabled={!settings.planIncludesLoyalty}
+                checked={!!loyaltyOn && settings.planIncludesLoyalty}
                 onCheckedChange={(checked) =>
                   loyaltyForm.setValue("enabled", checked, { shouldDirty: true })
                 }

@@ -12,6 +12,7 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 import { trackEvent } from "@/lib/analytics";
 import { notifyTeam, recordActivity } from "@/lib/activity";
 import { formatTime } from "@/lib/utils";
+import { subscriptionState } from "@/lib/subscription";
 
 type RouteParams = { params: Promise<{ token: string }> };
 
@@ -27,7 +28,9 @@ async function loadBooking(token: string) {
   const [branch, restaurant] = await Promise.all([
     Branch.findById(reservation.branchId).lean(),
     Restaurant.findById(reservation.restaurantId)
-      .select("name slug bookingSettings phone")
+      .select(
+        "name slug bookingSettings phone subscriptionPlan subscriptionEndsAt onTrial suspendedAt createdAt"
+      )
       .lean(),
   ]);
   if (!branch || !restaurant) throw new ApiError("Booking not found", 404);
@@ -116,7 +119,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return ok({ status: reservation.status });
     }
 
-    // Reschedule
+    // Reschedule. Cancelling always works; moving needs a working restaurant.
+    if (!subscriptionState(restaurant).acceptingBookings) {
+      throw new ApiError(
+        "This booking can't be changed online right now — please call the restaurant",
+        409
+      );
+    }
     const dayKey = input.date ?? dateToDayKey(reservation.date);
     const time = input.time ?? reservation.time;
     const guests = input.guests ?? reservation.guests;

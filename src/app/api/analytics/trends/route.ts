@@ -7,7 +7,7 @@ import {
   ok,
   requireTenantSession,
 } from "@/lib/api-helpers";
-import { TIMEZONE } from "@/lib/constants";
+import { PLANS, TIMEZONE } from "@/lib/constants";
 import { revenueByDay } from "@/lib/revenue";
 import {
   addDaysToKey,
@@ -25,8 +25,9 @@ export async function GET(request: NextRequest) {
     const ctx = await requireTenantSession();
     const restaurantId = new Types.ObjectId(ctx.restaurantId);
 
+    // How far back a restaurant can look depends on its plan.
     const days = Math.min(
-      90,
+      PLANS[ctx.subscription.plan].analyticsDays,
       Math.max(7, Number(request.nextUrl.searchParams.get("days")) || 30)
     );
 

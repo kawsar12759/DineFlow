@@ -99,7 +99,7 @@ describe("the portal", () => {
     });
     await Restaurant.updateOne(
       { _id: seed.restaurantB._id },
-      { $set: { "loyaltySettings.enabled": true } }
+      { $set: { "loyaltySettings.enabled": true, subscriptionPlan: "growth" } }
     );
     await Customer.updateOne({ _id: seed.customerA._id }, { $set: { loyaltyPoints: 999 } });
 

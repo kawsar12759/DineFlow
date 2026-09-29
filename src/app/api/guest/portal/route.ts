@@ -13,7 +13,7 @@ import { ApiError, handleApiError, ok } from "@/lib/api-helpers";
 import { guestEmail } from "@/lib/guest-session";
 import { bookingToken, feedbackToken } from "@/lib/booking-token";
 import { dateToDayKey, todayKey, addDaysToKey } from "@/lib/dates";
-import { loyaltySettings } from "@/lib/loyalty";
+import { effectiveLoyalty } from "@/lib/loyalty";
 import {
   ACTIVE_RESERVATION_STATUSES,
   FEEDBACK_WINDOW_DAYS,
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     const [restaurants, reservations, transactions] = await Promise.all([
       Restaurant.find({ _id: { $in: customers.map((c) => c.restaurantId) } })
-        .select("name slug cuisine isPublished loyaltySettings")
+        .select("name slug cuisine isPublished loyaltySettings subscriptionPlan")
         .lean(),
       Reservation.find({ customerId: { $in: customerIds } })
         .sort({ date: -1, time: -1 })
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     const memberships = customers.flatMap((customer) => {
       const restaurant = restaurantById.get(customer.restaurantId.toString());
       if (!restaurant) return [];
-      const loyalty = loyaltySettings(restaurant.loyaltySettings);
+      const loyalty = effectiveLoyalty(restaurant);
       return [
         {
           restaurant: {

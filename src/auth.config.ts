@@ -37,8 +37,20 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user;
       const role = auth?.user?.role as Role | undefined;
 
+      // DineFlow's own operators work in /admin, not in a restaurant.
+      if (pathname.startsWith("/admin")) {
+        if (!isLoggedIn) return false;
+        if (role !== "super_admin") {
+          return Response.redirect(new URL("/", request.nextUrl));
+        }
+        return true;
+      }
+
       if (pathname.startsWith("/dashboard")) {
         if (!isLoggedIn) return false;
+        if (role === "super_admin") {
+          return Response.redirect(new URL("/admin", request.nextUrl));
+        }
         if (role && !DASHBOARD_ROLES.includes(role)) {
           return Response.redirect(new URL("/", request.nextUrl));
         }
@@ -50,7 +62,11 @@ export const authConfig = {
         (pathname === "/login" || pathname === "/register")
       ) {
         const target =
-          role && DASHBOARD_ROLES.includes(role) ? "/dashboard" : "/";
+          role === "super_admin"
+            ? "/admin"
+            : role && DASHBOARD_ROLES.includes(role)
+              ? "/dashboard"
+              : "/";
         return Response.redirect(new URL(target, request.nextUrl));
       }
 

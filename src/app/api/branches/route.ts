@@ -9,8 +9,10 @@ import {
   parsePagination,
   branchFilter,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
+import { assertCanAddBranch } from "@/lib/plan-limits";
 import { trackEvent } from "@/lib/analytics";
 
 export async function GET(request: NextRequest) {
@@ -44,8 +46,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const input = await parseBody(request, branchSchema);
+    if (input.isActive !== false) await assertCanAddBranch(ctx);
 
     const branch = await Branch.create({
       ...input,

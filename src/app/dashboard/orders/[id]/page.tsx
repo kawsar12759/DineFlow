@@ -128,9 +128,20 @@ export default function OrderDetailPage({
 
   const { data: settingsData } = useQuery({
     queryKey: ["settings"],
-    queryFn: () => api.get<{ loyaltySettings: LoyaltySettings }>("/api/settings"),
+    queryFn: () =>
+      api.get<{ loyaltySettings: LoyaltySettings; planIncludesLoyalty: boolean }>(
+        "/api/settings"
+      ),
   });
-  const loyalty = settingsData?.data.loyaltySettings;
+  // The programme only runs when the plan includes it.
+  const loyalty = settingsData
+    ? {
+        ...settingsData.data.loyaltySettings,
+        enabled:
+          settingsData.data.loyaltySettings.enabled &&
+          settingsData.data.planIncludesLoyalty,
+      }
+    : undefined;
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["order", id] });

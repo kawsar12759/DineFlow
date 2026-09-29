@@ -7,6 +7,7 @@ import {
   BarChart3,
   CalendarCheck,
   ChefHat,
+  CreditCard,
   Grid2x2,
   History,
   MessageSquareHeart,
@@ -115,6 +116,12 @@ const navItems: NavItem[] = [
     roles: ["super_admin", "owner", "manager"],
   },
   {
+    href: "/dashboard/billing",
+    label: "Billing",
+    icon: CreditCard,
+    roles: ["owner"],
+  },
+  {
     href: "/dashboard/settings",
     label: "Settings",
     icon: Settings,
@@ -127,7 +134,7 @@ export function Sidebar({ role }: { role: Role }) {
   const visibleItems = navItems.filter((item) => item.roles.includes(role));
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex print:!hidden">
       <Link
         href="/dashboard"
         className="flex h-16 items-center gap-2 border-b border-sidebar-border px-5"
@@ -193,7 +200,7 @@ export function MobileNav({ role }: { role: Role }) {
   return (
     <nav
       aria-label="Dashboard"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-background pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-background pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden"
     >
       {primaryItems.map((item) => (
         <Link

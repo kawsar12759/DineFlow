@@ -10,6 +10,7 @@ import {
   parseBody,
   parseObjectId,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
@@ -57,7 +58,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id } = await params;
     const input = await parseBody(request, reservationUpdateSchema);
 
@@ -330,7 +331,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
 
     const reservation = await Reservation.findOneAndDelete({

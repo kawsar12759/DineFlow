@@ -3,10 +3,11 @@ import { Types } from "mongoose";
 import { ZodError, type ZodSchema } from "zod";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/db";
-import { User } from "@/models";
+import { Restaurant, User } from "@/models";
 import { DASHBOARD_ROLES, PAGE_SIZE, type Role } from "@/lib/constants";
 
 import { ApiError } from "@/lib/api-error";
+import { subscriptionState, type SubscriptionState } from "@/lib/subscription";
 
 export { ApiError };
 
@@ -17,6 +18,7 @@ export interface SessionContext {
   branchId?: string;
   /** Set when the user may only see one branch (branch-assigned staff). */
   branchScope?: string;
+  subscription: SubscriptionState;
 }
 
 /**
@@ -60,6 +62,15 @@ export async function requireTenantSession(
     throw new ApiError("Forbidden: no restaurant context", 403);
   }
 
+  const restaurant = await Restaurant.findById(user.restaurantId)
+    .select(
+      "subscriptionPlan subscriptionEndsAt onTrial suspendedAt suspendedReason createdAt"
+    )
+    .lean();
+  if (!restaurant) {
+    throw new ApiError("Forbidden: no restaurant context", 403);
+  }
+
   const branchId = user.branchId?.toString();
 
   return {
@@ -68,7 +79,47 @@ export async function requireTenantSession(
     restaurantId: user.restaurantId.toString(),
     branchId,
     branchScope: user.role === "staff" ? branchId : undefined,
+    subscription: subscriptionState(restaurant),
   };
+}
+
+/**
+ * For routes that change data. A restaurant whose subscription has run out
+ * (or that DineFlow has suspended) can still read everything and pay, but
+ * not change anything until it renews — 402 Payment Required.
+ */
+export async function requireWriteSession(
+  allowedRoles: Role[] = DASHBOARD_ROLES
+): Promise<SessionContext> {
+  const ctx = await requireTenantSession(allowedRoles);
+  if (ctx.subscription.status === "suspended") {
+    throw new ApiError(
+      "This restaurant is suspended. Please contact DineFlow support.",
+      402
+    );
+  }
+  if (ctx.subscription.readOnly) {
+    throw new ApiError(
+      "Your subscription has ended, so changes are paused. Renew it in Billing to continue.",
+      402
+    );
+  }
+  return ctx;
+}
+
+/** DineFlow's own operators, who look after every restaurant. */
+export async function requireSuperAdmin() {
+  const session = await auth();
+  if (!session?.user) throw new ApiError("Unauthorized", 401);
+
+  const user = await loadActiveUser(session.user.id);
+  if (!user) {
+    throw new ApiError("Your account is inactive or no longer exists", 401);
+  }
+  if (user.role !== "super_admin") {
+    throw new ApiError("Forbidden: insufficient permissions", 403);
+  }
+  return { userId: user._id.toString(), name: user.name };
 }
 
 /** Tenant filter every query must spread into its conditions. */

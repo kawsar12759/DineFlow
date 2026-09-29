@@ -3,13 +3,28 @@ import { Customer, LoyaltyTransaction } from "@/models";
 import type { LoyaltyTransactionType } from "@/models";
 import {
   DEFAULT_LOYALTY_SETTINGS,
+  PLANS,
   type LoyaltySettings,
+  type SubscriptionPlan,
 } from "@/lib/constants";
 
 export function loyaltySettings(
   settings?: Partial<LoyaltySettings> | null
 ): LoyaltySettings {
   return { ...DEFAULT_LOYALTY_SETTINGS, ...(settings ?? {}) };
+}
+
+/**
+ * The programme as it actually runs: switched off when the restaurant's
+ * plan does not include loyalty, whatever the settings say. Balances stay.
+ */
+export function effectiveLoyalty(restaurant?: {
+  loyaltySettings?: Partial<LoyaltySettings> | null;
+  subscriptionPlan?: SubscriptionPlan;
+} | null): LoyaltySettings {
+  const settings = loyaltySettings(restaurant?.loyaltySettings);
+  const planAllows = PLANS[restaurant?.subscriptionPlan ?? "starter"].loyalty;
+  return { ...settings, enabled: settings.enabled && planAllows };
 }
 
 /** Points earned on a spend: whole points only, rounded down. */

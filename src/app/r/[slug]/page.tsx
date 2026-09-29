@@ -15,8 +15,9 @@ import { bookingSettings, describeHours } from "@/lib/availability";
 import { MENU_CATEGORIES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { feedbackSettings, publicGuestName, ratingSummary } from "@/lib/feedback";
-import { loyaltySettings } from "@/lib/loyalty";
+import { effectiveLoyalty } from "@/lib/loyalty";
 import { StarRating } from "@/components/shared/star-rating";
+import { subscriptionState } from "@/lib/subscription";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -78,7 +79,8 @@ export default async function RestaurantStorefront({ params }: PageProps) {
 
   const { restaurant, branches, menu, rating, reviews } = data;
   const settings = bookingSettings(restaurant.bookingSettings);
-  const loyalty = loyaltySettings(restaurant.loyaltySettings);
+  const loyalty = effectiveLoyalty(restaurant);
+  const acceptingBookings = subscriptionState(restaurant).acceptingBookings;
 
   const bookingBranches: BookingBranch[] = branches.map((branch) => ({
     _id: branch._id.toString(),
@@ -313,7 +315,7 @@ export default async function RestaurantStorefront({ params }: PageProps) {
 
         {/* Booking */}
         <aside className="lg:sticky lg:top-8 lg:self-start">
-          {bookingBranches.length > 0 ? (
+          {bookingBranches.length > 0 && acceptingBookings ? (
             <BookingWidget
               restaurantId={restaurant._id.toString()}
               branches={bookingBranches}
@@ -321,7 +323,9 @@ export default async function RestaurantStorefront({ params }: PageProps) {
             />
           ) : (
             <p className="rounded-xl border p-6 text-sm text-muted-foreground">
-              Online booking is not available yet.
+              {acceptingBookings
+                ? "Online booking is not available yet."
+                : "Online booking is paused. Please call the restaurant to book."}
             </p>
           )}
           {loyalty.enabled && (

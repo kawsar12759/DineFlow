@@ -8,6 +8,7 @@ import {
   parseBody,
   parseObjectId,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { menuBranchFilter } from "@/lib/menu-scope";
@@ -37,7 +38,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession([
+    const ctx = await requireWriteSession([
       "super_admin",
       "owner",
       "manager",
@@ -83,7 +84,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
 
     const item = await MenuItem.findOneAndDelete({

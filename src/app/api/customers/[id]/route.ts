@@ -8,9 +8,10 @@ import {
   parseBody,
   parseObjectId,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
-import { loyaltySettings } from "@/lib/loyalty";
+import { effectiveLoyalty } from "@/lib/loyalty";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -39,7 +40,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         .limit(10)
         .populate("branchId", "name")
         .lean(),
-      Restaurant.findById(ctx.restaurantId).select("loyaltySettings").lean(),
+      Restaurant.findById(ctx.restaurantId)
+        .select("loyaltySettings subscriptionPlan")
+        .lean(),
     ]);
 
     if (!customer) throw new ApiError("Customer not found", 404);
@@ -49,7 +52,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       reservations,
       loyaltyHistory,
       feedback,
-      loyalty: loyaltySettings(restaurant?.loyaltySettings),
+      loyalty: effectiveLoyalty(restaurant),
     });
   } catch (error) {
     return handleApiError(error);
@@ -58,7 +61,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id } = await params;
     const input = await parseBody(request, customerUpdateSchema);
 
@@ -78,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
 
     const customer = await Customer.findOneAndDelete({

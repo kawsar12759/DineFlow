@@ -11,6 +11,7 @@ import {
   parseBody,
   parseObjectId,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { billingSettings } from "@/lib/availability";
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
 /** Opens a ticket, either for a seated reservation or straight onto tables. */
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const input = await parseBody(request, orderCreateSchema);
 
     let branchId: Types.ObjectId;

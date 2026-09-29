@@ -8,7 +8,7 @@ import {
   ok,
   parseBody,
   parseObjectId,
-  requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { applyTotals } from "@/lib/orders";
@@ -19,7 +19,7 @@ type RouteParams = { params: Promise<{ id: string; itemId: string }> };
 /** Changes one line: quantity, notes, kitchen progress, or void it. */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id, itemId } = await params;
     const input = await parseBody(request, orderItemUpdateSchema);
 
@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 /** Removes a line that was never sent to the kitchen. */
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id, itemId } = await params;
 
     const order = await Order.findOne({

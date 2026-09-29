@@ -14,6 +14,7 @@ import { bookingManageUrl } from "@/lib/booking-token";
 import { sendBookingReceived } from "@/lib/email/booking-emails";
 import { notifyTeam, recordActivity } from "@/lib/activity";
 import { formatTime } from "@/lib/utils";
+import { subscriptionState } from "@/lib/subscription";
 
 /**
  * Public booking endpoint used by the marketing site reservation form.
@@ -37,9 +38,11 @@ export async function POST(request: NextRequest) {
 
     const restaurantId = branch.restaurantId;
     const restaurant = await Restaurant.findById(restaurantId)
-      .select("bookingSettings isPublished")
+      .select(
+        "bookingSettings isPublished subscriptionPlan subscriptionEndsAt onTrial suspendedAt createdAt"
+      )
       .lean();
-    if (!restaurant?.isPublished) {
+    if (!restaurant?.isPublished || !subscriptionState(restaurant).acceptingBookings) {
       throw new ApiError("This restaurant is not taking online bookings", 404);
     }
     const settings = bookingSettings(restaurant.bookingSettings);

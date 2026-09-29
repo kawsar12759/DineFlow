@@ -12,8 +12,10 @@ import {
   parseObjectId,
   parsePagination,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
+import { assertCanAddStaff } from "@/lib/plan-limits";
 import {
   INVITE_TTL_HOURS,
   issuePasswordToken,
@@ -63,7 +65,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const input = await parseBody(request, staffSchema);
 
     // Managers cannot create other managers — only owners can.
@@ -75,6 +77,7 @@ export async function POST(request: NextRequest) {
     if (existing) {
       throw new ApiError("An account with this email already exists", 409);
     }
+    await assertCanAddStaff(ctx);
 
     // No password given: set an unusable one and send an invite link.
     const invited = !input.password;

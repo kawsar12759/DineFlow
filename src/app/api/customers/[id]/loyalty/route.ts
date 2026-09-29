@@ -7,7 +7,7 @@ import {
   ok,
   parseBody,
   parseObjectId,
-  requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { changePoints } from "@/lib/loyalty";
@@ -18,7 +18,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 /** Manually add or remove points (goodwill, corrections), with a reason. */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
     const input = await parseBody(request, loyaltyAdjustSchema);
 

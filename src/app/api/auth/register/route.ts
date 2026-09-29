@@ -5,6 +5,7 @@ import { registerSchema } from "@/lib/validations";
 import { handleApiError, ok, parseBody, ApiError } from "@/lib/api-helpers";
 import { trackEvent } from "@/lib/analytics";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { TRIAL_DAYS } from "@/lib/constants";
 
 function slugify(value: string) {
   return value
@@ -50,6 +51,9 @@ export async function POST(request: Request) {
       slug,
       ownerId: user._id,
       subscriptionPlan: "starter",
+      // Every new restaurant starts with a free trial of the Starter plan.
+      onTrial: true,
+      subscriptionEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000),
     });
 
     user.restaurantId = restaurant._id;

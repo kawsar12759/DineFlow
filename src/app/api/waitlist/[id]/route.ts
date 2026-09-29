@@ -17,6 +17,7 @@ import {
   parseBody,
   parseObjectId,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { bookingSettings } from "@/lib/availability";
@@ -118,7 +119,7 @@ async function seatEntry(
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id } = await params;
     const input = await parseBody(request, waitlistUpdateSchema);
 
@@ -151,7 +152,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id } = await params;
 
     const entry = await WaitlistEntry.findOneAndDelete({

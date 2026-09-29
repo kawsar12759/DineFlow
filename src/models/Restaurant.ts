@@ -18,6 +18,15 @@ export interface IRestaurant extends Document {
   slug: string;
   ownerId: Types.ObjectId;
   subscriptionPlan: SubscriptionPlan;
+  /** Paid (or trial) access runs until this moment. */
+  subscriptionEndsAt?: Date;
+  /** True until the first successful payment. */
+  onTrial: boolean;
+  /** Set by DineFlow staff to switch a restaurant off, whatever it has paid. */
+  suspendedAt?: Date;
+  suspendedReason?: string;
+  /** Reminder emails already sent, as "<endsAt ISO>:<stage>", so each goes once. */
+  subscriptionNotices: string[];
   cuisine?: string;
   description?: string;
   logo?: string;
@@ -49,6 +58,11 @@ const RestaurantSchema = new Schema<IRestaurant>(
       enum: SUBSCRIPTION_PLANS,
       default: "starter",
     },
+    subscriptionEndsAt: { type: Date, index: true },
+    onTrial: { type: Boolean, default: true },
+    suspendedAt: { type: Date },
+    suspendedReason: { type: String, trim: true, maxlength: 300 },
+    subscriptionNotices: { type: [String], default: [] },
     cuisine: { type: String, trim: true },
     description: { type: String, trim: true },
     logo: { type: String },

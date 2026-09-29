@@ -8,20 +8,32 @@ import {
   ok,
   parseBody,
   parseObjectId,
-  requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
+import { assertCanAddStaff } from "@/lib/plan-limits";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
     const input = await parseBody(request, staffUpdateSchema);
 
     if (ctx.role === "manager" && input.role === "manager") {
       throw new ApiError("Managers cannot promote to manager", 403);
+    }
+
+    // Switching an account back on counts towards the plan's limit.
+    if (input.isActive === true) {
+      const current = await User.findOne({
+        _id: parseObjectId(id, "staff id"),
+        ...tenantFilter(ctx),
+      })
+        .select("isActive")
+        .lean();
+      if (current && !current.isActive) await assertCanAddStaff(ctx);
     }
 
     const { password, branchId, ...rest } = input;
@@ -53,7 +65,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner"]);
+    const ctx = await requireWriteSession(["super_admin", "owner"]);
     const { id } = await params;
 
     const member = await User.findOneAndDelete({

@@ -42,6 +42,8 @@ beforeEach(async () => {
     { _id: seed.restaurantA._id },
     {
       $set: {
+        // Loyalty is part of the Growth plan.
+        subscriptionPlan: "growth",
         loyaltySettings: {
           enabled: true,
           pointsPer100Taka: 5,

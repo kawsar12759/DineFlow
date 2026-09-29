@@ -1,5 +1,6 @@
 import { APP_NAME } from "@/lib/constants";
-import { formatDate, formatTime } from "@/lib/utils";
+import type { ReminderStage } from "@/lib/subscription";
+import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
 
 /**
  * Plain, table-free HTML that survives most email clients, plus a text
@@ -300,6 +301,87 @@ export function guestSignInEmail(data: { url: string; expiresInMinutes: number }
 
   return {
     subject: `Sign in to your ${APP_NAME} bookings`,
+    html: layout(content),
+    text: textVersion(content),
+  };
+}
+
+/** Sent to the owner once a subscription payment is confirmed. */
+export function subscriptionReceiptEmail(data: {
+  name: string;
+  restaurantName: string;
+  planName: string;
+  period: "monthly" | "yearly";
+  amount: number;
+  invoiceNumber: string;
+  paidUntil?: Date;
+  url: string;
+}): Template {
+  const content = {
+    heading: "Payment received — thank you",
+    intro: `Hi ${data.name}, we have received your payment for ${data.restaurantName} on ${APP_NAME}.`,
+    details: [
+      { label: "Invoice", value: data.invoiceNumber },
+      { label: "Plan", value: `${data.planName} (${data.period === "yearly" ? "1 year" : "1 month"})` },
+      { label: "Amount", value: formatCurrency(data.amount) },
+      ...(data.paidUntil ? [{ label: "Active until", value: formatDate(data.paidUntil) }] : []),
+    ],
+    cta: { label: "View invoice", url: data.url },
+  };
+
+  return {
+    subject: `Receipt ${data.invoiceNumber} — ${APP_NAME} ${data.planName}`,
+    html: layout(content),
+    text: textVersion(content),
+  };
+}
+
+
+/** Reminders before and after a subscription runs out. */
+export function subscriptionReminderEmail(data: {
+  name: string;
+  restaurantName: string;
+  planName: string;
+  stage: ReminderStage;
+  onTrial: boolean;
+  endsAt: Date;
+  cutoffAt: Date;
+  url: string;
+}): Template {
+  const what = data.onTrial ? "free trial" : `${data.planName} plan`;
+  const copy: Record<ReminderStage, { subject: string; heading: string; intro: string }> = {
+    "7d": {
+      subject: `Your ${APP_NAME} ${what} ends in 7 days`,
+      heading: `Your ${what} ends on ${formatDate(data.endsAt)}`,
+      intro: `Hi ${data.name}, ${data.restaurantName}'s ${what} ends in a week. Renew now to keep bookings, orders and your team running without a break.`,
+    },
+    "3d": {
+      subject: `3 days left on your ${APP_NAME} ${what}`,
+      heading: `3 days left on your ${what}`,
+      intro: `Hi ${data.name}, ${data.restaurantName}'s ${what} ends on ${formatDate(data.endsAt)}.`,
+    },
+    grace: {
+      subject: `Action needed: renew ${data.restaurantName} on ${APP_NAME}`,
+      heading: "Your subscription has ended",
+      intro: `Hi ${data.name}, ${data.restaurantName}'s ${what} ended on ${formatDate(data.endsAt)}. Everything keeps working until ${formatDate(data.cutoffAt)}; after that the dashboard becomes read-only and online booking pauses.`,
+    },
+    expired: {
+      subject: `${data.restaurantName} is paused on ${APP_NAME}`,
+      heading: "Your restaurant is paused",
+      intro: data.onTrial
+        ? `Hi ${data.name}, ${data.restaurantName}'s free trial has ended. Your data is safe — choose a plan to pick up where you left off.`
+        : `Hi ${data.name}, ${data.restaurantName} has not been renewed, so the dashboard is read-only and online booking is paused. Your data is safe — renew to switch everything back on.`,
+    },
+  };
+
+  const content = {
+    heading: copy[data.stage].heading,
+    intro: copy[data.stage].intro,
+    cta: { label: data.stage === "expired" ? "Choose a plan" : "Renew now", url: data.url },
+  };
+
+  return {
+    subject: copy[data.stage].subject,
     html: layout(content),
     text: textVersion(content),
   };

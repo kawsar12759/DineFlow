@@ -6,7 +6,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FadeUp, Stagger, StaggerItem } from "@/components/marketing/animated";
 import { cn, formatCurrency } from "@/lib/utils";
-import { PLAN_MONTHLY_PRICE } from "@/lib/constants";
+import { PLANS, PLAN_MONTHLY_PRICE, TRIAL_DAYS } from "@/lib/constants";
+
+// Limits come from PLANS, the same values the server enforces.
+function branches(limit: number | null) {
+  if (limit === null) return "Unlimited branches";
+  return limit === 1 ? "1 branch" : `Up to ${limit} branches`;
+}
+function staff(limit: number | null) {
+  return limit === null ? "Unlimited staff accounts" : `${limit} staff accounts`;
+}
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -22,12 +31,14 @@ const plans = [
     highlighted: false,
     cta: "Start free trial",
     features: [
-      "1 branch",
+      branches(PLANS.starter.maxBranches),
       "Unlimited reservations",
+      "Public booking page",
+      "Orders, kitchen screen and bills",
       "Menu management",
-      "Customer profiles",
-      "Basic analytics (30 days)",
-      "2 staff accounts",
+      "Customer profiles and guest feedback",
+      `Analytics (last ${PLANS.starter.analyticsDays} days)`,
+      staff(PLANS.starter.maxStaff),
       "Email support",
     ],
   },
@@ -39,14 +50,14 @@ const plans = [
     highlighted: true,
     cta: "Start free trial",
     features: [
-      "Up to 10 branches",
+      branches(PLANS.growth.maxBranches),
       "Everything in Starter",
-      "Advanced analytics (12 months)",
+      `Analytics (last ${PLANS.growth.analyticsDays} days)`,
       "Branch performance comparison",
-      "Unlimited staff accounts",
+      "Loyalty points",
+      staff(PLANS.growth.maxStaff),
       "Role-based access control",
       "Priority support",
-      "Public booking page",
     ],
   },
   {
@@ -57,7 +68,7 @@ const plans = [
     highlighted: false,
     cta: "Contact sales",
     features: [
-      "Unlimited branches",
+      branches(PLANS.enterprise.maxBranches),
       "Everything in Growth",
       "Dedicated success manager",
       "Custom integrations & API",
@@ -72,12 +83,12 @@ const faqs = [
   {
     question: "Is there a free trial?",
     answer:
-      "Yes — every plan starts with a 14-day free trial. No credit card required.",
+      `Yes — every new restaurant starts with a ${TRIAL_DAYS}-day free trial of Starter. No card needed; you only pay when you choose a plan.`,
   },
   {
     question: "Can I change plans later?",
     answer:
-      "Anytime. Upgrades take effect immediately; downgrades apply at the next billing cycle.",
+      "Anytime, from Billing in your dashboard. A new plan starts as soon as you pay for it, and paid days left on your old plan carry over at their value. Pay monthly, or yearly for two months free.",
   },
   {
     question: "What happens to my data if I cancel?",

@@ -343,6 +343,29 @@ export const feedbackUpdateSchema = z
     message: "Nothing to update",
   });
 
+// ---------- Billing ----------
+
+export const billingCheckoutSchema = z.object({
+  plan: z.enum(["starter", "growth"]),
+  period: z.enum(["monthly", "yearly"]),
+});
+
+export const adminRestaurantUpdateSchema = z
+  .object({
+    /** Free days added to the current subscription (a goodwill extension). */
+    extendDays: z.coerce.number().int().min(1).max(365).optional(),
+    plan: z.enum(["starter", "growth", "enterprise"]).optional(),
+    suspended: z.boolean().optional(),
+    note: z.string().trim().min(3, "Say why").max(300),
+  })
+  .refine(
+    (value) =>
+      value.extendDays !== undefined ||
+      value.plan !== undefined ||
+      value.suspended !== undefined,
+    { message: "Nothing to change" }
+  );
+
 // ---------- Guest portal ----------
 
 export const guestSignInSchema = z.object({

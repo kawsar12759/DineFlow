@@ -9,7 +9,7 @@ import {
   ok,
   parseBody,
   parseObjectId,
-  requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { recordActivity } from "@/lib/activity";
@@ -22,7 +22,7 @@ type RouteParams = { params: Promise<{ id: string }> };
 /** Reply to a review (emailed to the guest) or hide it from the public page. */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
     const input = await parseBody(request, feedbackUpdateSchema);
 

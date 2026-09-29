@@ -10,12 +10,13 @@ import {
   parseBody,
   parseObjectId,
   requireTenantSession,
+  requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
 import { applyTotals } from "@/lib/orders";
 import { formatCurrency } from "@/lib/utils";
 import { recordActivity } from "@/lib/activity";
-import { loyaltySettings, pointsValue } from "@/lib/loyalty";
+import { effectiveLoyalty, pointsValue } from "@/lib/loyalty";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -57,7 +58,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 /** Adds lines to an open order, copying today's name and price. */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id } = await params;
     const input = await parseBody(request, orderItemsSchema);
 
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession();
+    const ctx = await requireWriteSession();
     const { id } = await params;
     const input = await parseBody(request, orderUpdateSchema);
 
@@ -170,12 +171,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           throw new ApiError("Attach a guest before redeeming points", 400);
         }
         const [restaurant, customer] = await Promise.all([
-          Restaurant.findById(ctx.restaurantId).select("loyaltySettings").lean(),
+          Restaurant.findById(ctx.restaurantId)
+            .select("loyaltySettings subscriptionPlan")
+            .lean(),
           Customer.findOne({ _id: order.customerId, ...tenantFilter(ctx) })
             .select("loyaltyPoints")
             .lean(),
         ]);
-        const loyalty = loyaltySettings(restaurant?.loyaltySettings);
+        const loyalty = effectiveLoyalty(restaurant);
         if (!loyalty.enabled) {
           throw new ApiError("The loyalty programme is turned off", 400);
         }
@@ -240,7 +243,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 /** Voids an open order (mistakes, walkouts). Paid orders stay for the record. */
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner", "manager"]);
+    const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const { id } = await params;
 
     const order = await loadOrder(ctx, id);

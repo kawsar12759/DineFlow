@@ -7,11 +7,14 @@ import {
   ok,
   parseBody,
   requireTenantSession,
+  requireWriteSession,
 } from "@/lib/api-helpers";
 import { billingSettings, bookingSettings } from "@/lib/availability";
 import { recordActivity } from "@/lib/activity";
 import { loyaltySettings } from "@/lib/loyalty";
 import { feedbackSettings } from "@/lib/feedback";
+import { assertPlanHasLoyalty } from "@/lib/plan-limits";
+import { PLANS } from "@/lib/constants";
 
 function withDefaults<T extends Pick<
   IRestaurant,
@@ -41,7 +44,10 @@ export async function GET() {
     const restaurant = await Restaurant.findById(ctx.restaurantId).lean();
     if (!restaurant) throw new ApiError("Restaurant not found", 404);
 
-    return ok(withDefaults(restaurant));
+    return ok({
+      ...withDefaults(restaurant),
+      planIncludesLoyalty: PLANS[ctx.subscription.plan].loyalty,
+    });
   } catch (error) {
     return handleApiError(error);
   }
@@ -49,8 +55,10 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const ctx = await requireTenantSession(["super_admin", "owner"]);
+    const ctx = await requireWriteSession(["super_admin", "owner"]);
     const input = await parseBody(request, settingsUpdateSchema);
+
+    if (input.loyaltySettings?.enabled) assertPlanHasLoyalty(ctx);
 
     const update: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(input.profile ?? {})) {
@@ -92,7 +100,10 @@ export async function PATCH(request: NextRequest) {
         .join(" and ")}`,
     });
 
-    return ok(withDefaults(restaurant));
+    return ok({
+      ...withDefaults(restaurant),
+      planIncludesLoyalty: PLANS[ctx.subscription.plan].loyalty,
+    });
   } catch (error) {
     return handleApiError(error);
   }

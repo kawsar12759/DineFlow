@@ -21,6 +21,7 @@ import { sendEmail } from "@/lib/email/send";
 import { subscriptionReceiptEmail } from "@/lib/email/templates";
 import { appOrigin } from "@/lib/email/booking-emails";
 import { formatCurrency } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 /**
  * Subscription payments: start a checkout, then settle it once SSLCommerz
@@ -80,7 +81,7 @@ export async function startCheckout(input: {
     payment.status = "failed";
     payment.failureReason = "Could not open the payment page";
     await payment.save();
-    console.error("[billing] SSLCommerz session failed", error);
+    logger.error("SSLCommerz session failed", { error });
     throw new ApiError("The payment page could not be opened. Please try again.", 502);
   }
 }
@@ -109,7 +110,7 @@ export async function settlePayment(tranId: string, valId: string): Promise<Sett
     Math.abs(validation.amount - payment.amount) > 0.01
   ) {
     await closePayment(tranId, "failed", "Payment details did not match");
-    console.error("[billing] validation mismatch", { tranId, validation });
+    logger.error("SSLCommerz validation mismatch", { tranId, validation });
     return "failed";
   }
 
@@ -228,7 +229,7 @@ async function sendReceipt(payment: ISubscriptionPayment) {
       }),
     });
   } catch (error) {
-    console.error("[billing] receipt email failed", error);
+    logger.error("Subscription receipt email failed", { error });
   }
 }
 

@@ -52,7 +52,10 @@ export function Topbar({ userName, userEmail, role, restaurantName }: TopbarProp
         <NotificationBell />
         <ThemeToggle />
         <DropdownMenu>
-          <DropdownMenuTrigger className="rounded-full outline-none ring-ring focus-visible:ring-2">
+          <DropdownMenuTrigger
+            aria-label="Account menu"
+            className="rounded-full outline-none ring-ring focus-visible:ring-2"
+          >
             <Avatar>
               <AvatarFallback className="bg-primary/10 text-primary">
                 {getInitials(userName)}

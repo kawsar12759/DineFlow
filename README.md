@@ -77,9 +77,14 @@ npm run dev
 npm run lint       # ESLint (next/core-web-vitals + TypeScript)
 npm run typecheck  # tsc --noEmit
 npm test           # Vitest: unit tests + API integration tests
+npm run test:e2e   # Playwright: the built app in a real browser
 ```
 
 Integration tests call the real route handlers against an in-memory MongoDB (`mongodb-memory-server`, downloaded on first run). They cover tenant isolation, staff branch scoping, session revalidation, the reservation lifecycle, capacity (including two bookings racing for the last seats) and rate limiting.
+
+End-to-end tests (`e2e/`) drive Chromium through sign-in, role routing, a guest booking and cancelling from the storefront, tenant isolation and a lapsed subscription. `scripts/e2e-server.ts` starts its own in-memory MongoDB, seeds the fixture in `e2e/fixture.ts`, builds into `.next-e2e` and serves on port 3100, so it never touches your `.env.local` database or a running `npm run dev`. Install the browser once with `npx playwright install chromium`; set `E2E_SKIP_BUILD=1` to reuse the last build while editing specs.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and Vitest in one job and the build plus Playwright in another, on every push to `main` and every pull request. A failed run uploads the Playwright report (traces and screenshots) as an artifact.
 
 ### Demo accounts (password: `password123`)
 
@@ -162,3 +167,11 @@ Guests get every rule. Staff taking a phone booking skip the lead-time and how-f
 ## Deployment
 
 Deploys cleanly to Vercel: set `MONGODB_URI`, `AUTH_SECRET`, and `AUTH_TRUST_HOST=true` in project env vars and push.
+
+## Monitoring
+
+- **Health check:** `GET /api/health` pings MongoDB and returns `200 {"status":"ok"}`, or `503` when the database is unreachable. Point an uptime monitor (UptimeRobot, Better Stack, etc.) at it. It also reports the deployed commit on Vercel.
+- **Logs:** server code logs through `src/lib/logger.ts`. In production each entry is one JSON line (`time`, `level`, `msg`, plus fields such as `errorId`, `path` or `error.stack`), so Vercel's log search can filter by field. `LOG_LEVEL` (`debug`, `info`, `warn`, `error`, `silent`) sets the threshold; the default is `info` in production.
+- **Error references:** an unexpected API error returns a message with an 8-character reference (`errorId`) that is also in the log line. Page errors show Next's digest as "Reference". Search the logs for the reference a user reports.
+- **Uncaught errors:** `src/instrumentation.ts` logs every server error Next.js catches (pages, route handlers, server actions, middleware) with its route.
+- **Scheduled jobs:** each cron run logs a summary (`Cron: … finished`) with what it considered and sent.

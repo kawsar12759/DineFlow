@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { ActivityLog, Notification, User } from "@/models";
 import type { NotificationType } from "@/models";
+import { logger } from "@/lib/logger";
 
 /**
  * Activity and notifications are bookkeeping: they must never break the
@@ -36,7 +37,7 @@ export async function recordActivity(entry: {
       summary: entry.summary,
     });
   } catch (error) {
-    console.error("[activity] failed to record", entry.action, error);
+    logger.error("Failed to record activity", { action: entry.action, error });
   }
 }
 
@@ -59,6 +60,6 @@ export async function notifyTeam(entry: {
       readBy: [],
     });
   } catch (error) {
-    console.error("[notify] failed to create", entry.type, error);
+    logger.error("Failed to create notification", { type: entry.type, error });
   }
 }

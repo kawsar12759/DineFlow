@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { closePayment, settlePayment } from "@/lib/subscription-payments";
 import { appOrigin } from "@/lib/email/booking-emails";
+import { logger } from "@/lib/logger";
 
 /**
  * Where SSLCommerz sends the owner's browser after the payment page, as a
@@ -34,7 +35,7 @@ async function handle(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error("[billing] return handling failed", error);
+    logger.error("SSLCommerz return handling failed", { error });
     outcome = "unknown";
   }
 

@@ -7,6 +7,7 @@ import { Restaurant, User } from "@/models";
 import { DASHBOARD_ROLES, PAGE_SIZE, type Role } from "@/lib/constants";
 
 import { ApiError } from "@/lib/api-error";
+import { logger, newErrorId } from "@/lib/logger";
 import { subscriptionState, type SubscriptionState } from "@/lib/subscription";
 
 export { ApiError };
@@ -217,9 +218,15 @@ export function handleApiError(error: unknown) {
     );
   }
 
-  console.error("[API ERROR]", error);
+  // The reference lets support match what the user saw to the server log.
+  const errorId = newErrorId();
+  logger.error("Unhandled API error", { errorId, error });
   return NextResponse.json(
-    { success: false, error: "Internal server error" },
+    {
+      success: false,
+      error: `Something went wrong on our side (ref ${errorId}). Please try again.`,
+      errorId,
+    },
     { status: 500 }
   );
 }

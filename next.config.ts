@@ -16,6 +16,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // The E2E suite builds into its own folder so it never clobbers `next dev`.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
   images: {
     remotePatterns: [

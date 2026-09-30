@@ -9,6 +9,7 @@ import { dateToDayKey } from "@/lib/dates";
 import { appOrigin, isRealEmail } from "@/lib/email/booking-emails";
 import { sendEmail } from "@/lib/email/send";
 import { feedbackRequestEmail } from "@/lib/email/templates";
+import { logger } from "@/lib/logger";
 
 export function feedbackSettings(
   settings?: Partial<FeedbackSettings> | null
@@ -64,7 +65,7 @@ export async function requestFeedback(
     await sendEmail({ to: customer.email, ...template });
     return true;
   } catch (error) {
-    console.error("[feedback] could not request feedback", error);
+    logger.error("Could not request feedback", { error });
     return false;
   }
 }

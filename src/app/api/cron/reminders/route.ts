@@ -5,6 +5,7 @@ import { Reservation } from "@/models";
 import { handleApiError, ok } from "@/lib/api-helpers";
 import { addDaysToKey, dayKeyToDate, todayKey } from "@/lib/dates";
 import { sendBookingReminder } from "@/lib/email/booking-emails";
+import { logger } from "@/lib/logger";
 
 /**
  * Sends "see you tomorrow" emails. Meant to run once a day from a scheduler
@@ -42,7 +43,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return ok({ date: tomorrow, considered: reservations.length, sent, skipped });
+    const summary = { date: tomorrow, considered: reservations.length, sent, skipped };
+    logger.info("Cron: booking reminders finished", summary);
+    return ok(summary);
   } catch (error) {
     return handleApiError(error);
   }

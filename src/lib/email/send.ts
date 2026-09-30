@@ -5,6 +5,8 @@
  * booking (or invite) that triggered it.
  */
 
+import { logger } from "@/lib/logger";
+
 export interface EmailMessage {
   to: string;
   subject: string;
@@ -65,13 +67,13 @@ export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
 
     if (!response.ok) {
       const error = body?.message ?? `Resend responded ${response.status}`;
-      console.error("[email:resend] failed", error);
+      logger.error("Resend rejected email", { error, subject: message.subject });
       return { sent: false, provider: "resend", error };
     }
 
     return { sent: true, provider: "resend", id: body?.id };
   } catch (error) {
-    console.error("[email:resend] request failed", error);
+    logger.error("Resend request failed", { error, subject: message.subject });
     return {
       sent: false,
       provider: "resend",

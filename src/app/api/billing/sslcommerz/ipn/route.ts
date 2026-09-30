@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { closePayment, settlePayment } from "@/lib/subscription-payments";
+import { logger } from "@/lib/logger";
 
 /**
  * SSLCommerz's server-to-server notification (IPN). It arrives even when
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ received: true, outcome });
   } catch (error) {
-    console.error("[billing] IPN handling failed", error);
+    logger.error("SSLCommerz IPN handling failed", { error });
     // A 500 makes SSLCommerz retry later, which is what we want.
     return NextResponse.json({ received: false }, { status: 500 });
   }

@@ -19,6 +19,11 @@ export default function GlobalError({
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
         {error.message || "An unexpected error occurred. Please try again."}
       </p>
+      {error.digest && (
+        <p className="mt-2 font-mono text-xs text-muted-foreground">
+          Reference: {error.digest}
+        </p>
+      )}
       <Button className="mt-5" variant="outline" onClick={reset}>
         Try again
       </Button>

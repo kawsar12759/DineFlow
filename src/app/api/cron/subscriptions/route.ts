@@ -8,6 +8,7 @@ import { PLANS } from "@/lib/constants";
 import { sendEmail } from "@/lib/email/send";
 import { subscriptionReminderEmail } from "@/lib/email/templates";
 import { appOrigin } from "@/lib/email/booking-emails";
+import { logger } from "@/lib/logger";
 
 const DAY_MS = 86_400_000;
 
@@ -80,11 +81,13 @@ export async function GET(request: NextRequest) {
       sent += 1;
     }
 
-    return ok({
+    const summary = {
       considered: restaurants.length,
       remindersSent: sent,
       abandonedCheckouts: abandoned.modifiedCount,
-    });
+    };
+    logger.info("Cron: subscription reminders finished", summary);
+    return ok(summary);
   } catch (error) {
     return handleApiError(error);
   }

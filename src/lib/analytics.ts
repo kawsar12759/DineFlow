@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { AnalyticsEvent } from "@/models";
 import type { AnalyticsEventType } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 
 /**
  * Fire-and-forget analytics event tracking. Never throws — analytics
@@ -18,6 +19,6 @@ export async function trackEvent(
       metadata,
     });
   } catch (error) {
-    console.error("[analytics] failed to track event", type, error);
+    logger.error("Failed to track analytics event", { type, error });
   }
 }

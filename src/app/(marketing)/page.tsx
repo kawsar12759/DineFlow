@@ -92,12 +92,6 @@ export default function HomePage() {
           aria-hidden
         />
         <div className="container flex flex-col items-center py-24 text-center md:py-32">
-          <FadeUp>
-            <span className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              Now with branch-level analytics
-            </span>
-          </FadeUp>
           <FadeUp delay={0.08}>
             <h1 className="mt-6 max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
               Run every table, branch, and shift from one platform

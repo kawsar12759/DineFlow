@@ -7,7 +7,6 @@ import {
   Globe2,
   LayoutDashboard,
   ShieldCheck,
-  Sparkles,
   Store,
   Users,
 } from "lucide-react";

@@ -15,6 +15,7 @@ import { loyaltySettings } from "@/lib/loyalty";
 import { feedbackSettings } from "@/lib/feedback";
 import { assertPlanHasLoyalty } from "@/lib/plan-limits";
 import { PLANS } from "@/lib/constants";
+import { assertTenantImage, deleteReplacedImage } from "@/lib/cloudinary";
 
 function withDefaults<T extends Pick<
   IRestaurant,
@@ -61,9 +62,19 @@ export async function PATCH(request: NextRequest) {
     if (input.loyaltySettings?.enabled) assertPlanHasLoyalty(ctx);
 
     const update: Record<string, unknown> = {};
+    const unset: Record<string, 1> = {};
     for (const [key, value] of Object.entries(input.profile ?? {})) {
       // Empty strings clear optional fields rather than storing "".
-      update[key] = value === "" ? undefined : value;
+      if (value === "") unset[key] = 1;
+      else update[key] = value;
+    }
+
+    const newLogo = input.profile?.logo;
+    let previousLogo: string | undefined;
+    if (newLogo !== undefined) {
+      const current = await Restaurant.findById(ctx.restaurantId).select("logo").lean();
+      previousLogo = current?.logo;
+      assertTenantImage(newLogo, ctx.restaurantId, previousLogo);
     }
     for (const section of [
       "bookingSettings",
@@ -76,17 +87,24 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    if (Object.keys(update).length === 0) {
+    if (Object.keys(update).length === 0 && Object.keys(unset).length === 0) {
       throw new ApiError("Nothing to update", 400);
     }
 
     const restaurant = await Restaurant.findByIdAndUpdate(
       ctx.restaurantId,
-      { $set: update },
+      {
+        ...(Object.keys(update).length ? { $set: update } : {}),
+        ...(Object.keys(unset).length ? { $unset: unset } : {}),
+      },
       { new: true, runValidators: true }
     ).lean();
 
     if (!restaurant) throw new ApiError("Restaurant not found", 404);
+
+    if (newLogo !== undefined) {
+      await deleteReplacedImage(previousLogo, restaurant.logo, ctx.restaurantId);
+    }
 
     await recordActivity({
       restaurantId: ctx.restaurantId,

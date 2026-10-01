@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUpload } from "@/components/shared/image-upload";
 import type {
   BillingSettings,
   BookingSettings,
@@ -217,15 +218,22 @@ export default function SettingsPage() {
                 />
                 <FieldError message={profileForm.formState.errors.website?.message} />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="logo">Logo URL</Label>
-                <Input
-                  id="logo"
-                  placeholder="https://…/logo.png"
-                  {...profileForm.register("logo")}
-                />
-                <FieldError message={profileForm.formState.errors.logo?.message} />
-              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Logo</Label>
+              <ImageUpload
+                kind="logo"
+                shape="square"
+                value={profileForm.watch("logo")}
+                onChange={(url) =>
+                  profileForm.setValue("logo", url, { shouldDirty: true })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Shown on your public page. A square image works best.
+              </p>
+              <FieldError message={profileForm.formState.errors.logo?.message} />
             </div>
 
             <div className="flex items-center justify-between rounded-lg border p-3">

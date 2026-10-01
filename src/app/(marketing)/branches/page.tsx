@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CloudImage } from "@/components/shared/cloud-image";
 
 interface PublicBranch {
   _id: string;
@@ -20,6 +21,7 @@ interface PublicBranch {
   capacity: number;
   contactInfo?: { phone?: string; email?: string };
   openingHours?: string;
+  image?: string;
   restaurant?: { name: string; slug: string; cuisine?: string } | null;
 }
 
@@ -86,8 +88,19 @@ export default function BranchDirectoryPage() {
             {branches.map((branch) => (
               <Card
                 key={branch._id}
-                className="flex flex-col transition-shadow hover:shadow-md"
+                className="flex flex-col overflow-hidden transition-shadow hover:shadow-md"
               >
+                {branch.image && (
+                  <div className="relative aspect-video bg-muted">
+                    <CloudImage
+                      src={branch.image}
+                      alt={branch.name}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover"
+                    />
+                  </div>
+                )}
                 <CardContent className="flex flex-1 flex-col p-6">
                   <div className="flex items-start justify-between gap-2">
                     <div>

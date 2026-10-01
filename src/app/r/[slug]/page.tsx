@@ -17,6 +17,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { feedbackSettings, publicGuestName, ratingSummary } from "@/lib/feedback";
 import { effectiveLoyalty } from "@/lib/loyalty";
 import { StarRating } from "@/components/shared/star-rating";
+import { CloudImage } from "@/components/shared/cloud-image";
 import { subscriptionState } from "@/lib/subscription";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -69,6 +70,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description:
       restaurant.description ??
       `Reserve a table at ${restaurant.name}${restaurant.cuisine ? ` · ${restaurant.cuisine}` : ""}.`,
+    ...(restaurant.logo ? { openGraph: { images: [restaurant.logo] } } : {}),
   };
 }
 
@@ -100,9 +102,22 @@ export default async function RestaurantStorefront({ params }: PageProps) {
       <header className="border-b bg-sidebar text-white">
         <div className="container py-12">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary">
-              <UtensilsCrossed className="h-5 w-5 text-primary-foreground" />
-            </div>
+            {restaurant.logo ? (
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-white">
+                <CloudImage
+                  src={restaurant.logo}
+                  alt={`${restaurant.name} logo`}
+                  fill
+                  sizes="56px"
+                  priority
+                  className="object-contain p-1"
+                />
+              </div>
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary">
+                <UtensilsCrossed className="h-5 w-5 text-primary-foreground" />
+              </div>
+            )}
             <div>
               <h1 className="text-3xl font-semibold tracking-tight">
                 {restaurant.name}
@@ -165,7 +180,18 @@ export default async function RestaurantStorefront({ params }: PageProps) {
             <h2 className="text-xl font-semibold tracking-tight">Locations</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {branches.map((branch) => (
-                <Card key={branch._id.toString()}>
+                <Card key={branch._id.toString()} className="overflow-hidden">
+                  {branch.image && (
+                    <div className="relative aspect-video bg-muted">
+                      <CloudImage
+                        src={branch.image}
+                        alt={branch.name}
+                        fill
+                        sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
                   <CardContent className="space-y-2 p-5">
                     <h3 className="font-medium">{branch.name}</h3>
                     <p className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -214,9 +240,20 @@ export default async function RestaurantStorefront({ params }: PageProps) {
                       {items.map((item) => (
                         <li
                           key={item._id.toString()}
-                          className="flex items-start justify-between gap-6"
+                          className="flex items-start gap-4"
                         >
-                          <div className="min-w-0">
+                          {item.image && (
+                            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
+                              <CloudImage
+                                src={item.image}
+                                alt={item.name}
+                                fill
+                                sizes="80px"
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-medium">{item.name}</span>
                               {item.allergens.map((allergen) => (

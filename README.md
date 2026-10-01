@@ -41,6 +41,7 @@ Built for Bangladesh: all amounts are in BDT (৳, lakh/crore grouping), dates a
 - New restaurants get a 14-day free trial. When a paid plan ends there is a 7-day grace period; after that the dashboard becomes read-only and online booking pauses until the owner renews, with reminder emails before and after
 - Payments are only counted after SSLCommerz's validation service confirms them, whether the owner's browser returns first or SSLCommerz's IPN does; payments SSLCommerz flags as risky wait for DineFlow to approve them
 - Admin console at `/admin` for DineFlow's own team: every restaurant's plan and status, monthly recurring revenue, payments, and support actions (free days, plan change, suspend or reinstate), each recorded in the restaurant's activity log
+- Photos: owners upload a logo, branch cover photos and dish photos (JPEG, PNG or WebP). They are resized in the browser, checked on the server and stored on Cloudinary in a folder per restaurant, then served at the right size for each screen. Replaced or deleted photos are removed from Cloudinary too
 - Personal profile page with password change, and a light/dark theme toggle
 - Analytics: revenue, reservation, customer, branch, and menu popularity aggregations (server-side MongoDB pipelines)
 

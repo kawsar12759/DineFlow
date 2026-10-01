@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/shared/image-upload";
 import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
@@ -38,6 +39,7 @@ const formSchema = z.object({
   branchId: z.string().optional(),
   preparationTime: z.coerce.number().int().min(0).optional(),
   allergens: z.array(z.enum(ALLERGENS)),
+  image: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -52,6 +54,7 @@ export interface MenuItemRecord {
   availability: boolean;
   allergens: (typeof ALLERGENS)[number][];
   preparationTime?: number;
+  image?: string;
   createdAt: string;
 }
 
@@ -97,8 +100,9 @@ export function MenuItemFormDialog({
               branchId: branchId ?? "all",
               preparationTime: item.preparationTime,
               allergens: item.allergens,
+              image: item.image ?? "",
             }
-          : { category: "Mains", allergens: [], branchId: "all" }
+          : { category: "Mains", allergens: [], branchId: "all", image: "" }
       );
     }
   }, [open, item, form]);
@@ -110,6 +114,7 @@ export function MenuItemFormDialog({
         branchId:
           values.branchId && values.branchId !== "all" ? values.branchId : "",
         description: values.description || undefined,
+        image: values.image ?? "",
       };
       return isEditing
         ? api.patch(`/api/menu-items/${item._id}`, payload)
@@ -184,6 +189,15 @@ export function MenuItemFormDialog({
                 </p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Photo</Label>
+            <ImageUpload
+              kind="menu"
+              value={form.watch("image")}
+              onChange={(url) => form.setValue("image", url, { shouldDirty: true })}
+            />
           </div>
 
           <div className="space-y-1.5">

@@ -15,6 +15,7 @@ import {
 } from "@/lib/api-helpers";
 import { menuBranchFilter } from "@/lib/menu-scope";
 import { trackEvent } from "@/lib/analytics";
+import { assertTenantImage } from "@/lib/cloudinary";
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,10 +61,12 @@ export async function POST(request: NextRequest) {
     const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
     const input = await parseBody(request, menuItemSchema);
 
-    const { branchId, ...rest } = input;
+    const { branchId, image, ...rest } = input;
+    assertTenantImage(image, ctx.restaurantId);
 
     const item = await MenuItem.create({
       ...rest,
+      ...(image ? { image } : {}),
       ...(branchId ? { branchId: parseObjectId(branchId, "branch id") } : {}),
       ...tenantFilter(ctx),
     });

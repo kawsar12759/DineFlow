@@ -12,6 +12,7 @@ import {
   tenantFilter,
 } from "@/lib/api-helpers";
 import { menuBranchFilter } from "@/lib/menu-scope";
+import { assertTenantImage, deleteReplacedImage } from "@/lib/cloudinary";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -56,25 +57,40 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    const { branchId, ...rest } = input;
-    const update: Record<string, unknown> = { ...rest };
+    const filter = {
+      _id: parseObjectId(id, "menu item id"),
+      ...tenantFilter(ctx),
+      ...menuBranchFilter(ctx),
+    };
+
+    const { branchId, image, ...rest } = input;
+    const update: Record<string, unknown> = { $set: { ...rest } };
+    const set = update.$set as Record<string, unknown>;
     if (branchId !== undefined) {
-      update.branchId = branchId
-        ? parseObjectId(branchId, "branch id")
-        : null;
+      set.branchId = branchId ? parseObjectId(branchId, "branch id") : null;
     }
 
-    const item = await MenuItem.findOneAndUpdate(
-      {
-        _id: parseObjectId(id, "menu item id"),
-        ...tenantFilter(ctx),
-        ...menuBranchFilter(ctx),
-      },
-      { $set: update },
-      { new: true, runValidators: true }
-    ).lean();
+    let previousImage: string | undefined;
+    if (image !== undefined) {
+      const current = await MenuItem.findOne(filter).select("image").lean();
+      if (!current) throw new ApiError("Menu item not found", 404);
+      previousImage = current.image;
+      assertTenantImage(image, ctx.restaurantId, previousImage);
+      if (image) set.image = image;
+      else update.$unset = { image: 1 };
+    }
+    if (Object.keys(set).length === 0) delete update.$set;
+
+    const item = await MenuItem.findOneAndUpdate(filter, update, {
+      new: true,
+      runValidators: true,
+    }).lean();
 
     if (!item) throw new ApiError("Menu item not found", 404);
+
+    if (image !== undefined) {
+      await deleteReplacedImage(previousImage, item.image, ctx.restaurantId);
+    }
 
     return ok(item);
   } catch (error) {
@@ -93,6 +109,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     }).lean();
 
     if (!item) throw new ApiError("Menu item not found", 404);
+
+    await deleteReplacedImage(item.image, null, ctx.restaurantId);
 
     return ok({ deleted: true });
   } catch (error) {

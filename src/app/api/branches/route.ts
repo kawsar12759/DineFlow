@@ -12,6 +12,7 @@ import {
   requireWriteSession,
   tenantFilter,
 } from "@/lib/api-helpers";
+import { assertTenantImage } from "@/lib/cloudinary";
 import { assertCanAddBranch } from "@/lib/plan-limits";
 import { trackEvent } from "@/lib/analytics";
 
@@ -47,11 +48,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const ctx = await requireWriteSession(["super_admin", "owner", "manager"]);
-    const input = await parseBody(request, branchSchema);
+    const { image, ...input } = await parseBody(request, branchSchema);
+    assertTenantImage(image, ctx.restaurantId);
     if (input.isActive !== false) await assertCanAddBranch(ctx);
 
     const branch = await Branch.create({
       ...input,
+      ...(image ? { image } : {}),
       ...tenantFilter(ctx),
     });
 

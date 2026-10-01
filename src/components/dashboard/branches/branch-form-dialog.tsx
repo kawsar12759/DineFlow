@@ -34,6 +34,7 @@ import {
   type OpeningHour,
 } from "@/lib/constants";
 import { describeHours } from "@/lib/availability";
+import { ImageUpload } from "@/components/shared/image-upload";
 import {
   ClosuresEditor,
   HoursEditor,
@@ -67,6 +68,7 @@ export interface BranchRecord {
   contactInfo?: { phone?: string; email?: string };
   hours?: OpeningHour[];
   closures?: { date: string; reason?: string }[];
+  image?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -86,6 +88,7 @@ export function BranchFormDialog({
   const isEditing = !!branch;
   const [hours, setHours] = useState<OpeningHour[]>(DEFAULT_OPENING_HOURS);
   const [closures, setClosures] = useState<ClosureValue[]>([]);
+  const [image, setImage] = useState("");
   const [tab, setTab] = useState("details");
 
   const form = useForm<FormValues>({
@@ -96,6 +99,7 @@ export function BranchFormDialog({
   useEffect(() => {
     if (open) {
       setTab("details");
+      setImage(branch?.image ?? "");
       setHours(
         branch?.hours?.length
           ? DEFAULT_OPENING_HOURS.map(
@@ -146,6 +150,7 @@ export function BranchFormDialog({
         },
         hours,
         closures,
+        image,
       };
       return isEditing
         ? api.patch(`/api/branches/${branch._id}`, payload)
@@ -193,6 +198,11 @@ export function BranchFormDialog({
               value="details"
               className="max-h-[60vh] space-y-4 overflow-y-auto pr-1 scrollbar-thin"
             >
+          <div className="space-y-1.5">
+            <Label>Cover photo</Label>
+            <ImageUpload kind="branch" value={image} onChange={setImage} />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="name">Branch name</Label>

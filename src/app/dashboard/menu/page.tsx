@@ -25,6 +25,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Thumbnail } from "@/components/shared/cloud-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -204,19 +205,24 @@ export default function MenuPage() {
                   return (
                     <TableRow key={item._id}>
                       <TableCell>
-                        <div className="font-medium">{item.name}</div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {item.preparationTime ? (
-                            <span className="inline-flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {item.preparationTime}m
-                            </span>
-                          ) : null}
-                          {item.allergens.length > 0 && (
-                            <span className="capitalize">
-                              {item.allergens.join(", ")}
-                            </span>
-                          )}
+                        <div className="flex items-center gap-3">
+                          <Thumbnail src={item.image} alt={item.name} fallback={ChefHat} />
+                          <div className="min-w-0">
+                            <div className="font-medium">{item.name}</div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              {item.preparationTime ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {item.preparationTime}m
+                                </span>
+                              ) : null}
+                              {item.allergens.length > 0 && (
+                                <span className="capitalize">
+                                  {item.allergens.join(", ")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>

@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PaginationControls } from "@/components/shared/pagination-controls";
+import { CloudImage } from "@/components/shared/cloud-image";
 
 interface PublicMenuItem {
   _id: string;
@@ -23,6 +24,7 @@ interface PublicMenuItem {
   category: string;
   allergens: string[];
   preparationTime?: number;
+  image?: string;
 }
 
 export default function PublicMenuPage() {
@@ -112,8 +114,19 @@ export default function PublicMenuPage() {
               {items.map((item) => (
                 <Card
                   key={item._id}
-                  className="flex flex-col transition-shadow hover:shadow-md"
+                  className="flex flex-col overflow-hidden transition-shadow hover:shadow-md"
                 >
+                  {item.image && (
+                    <div className="relative aspect-[4/3] bg-muted">
+                      <CloudImage
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
                   <CardContent className="flex flex-1 flex-col p-6">
                     <div className="flex items-start justify-between gap-3">
                       <h3 className="font-semibold">{item.name}</h3>

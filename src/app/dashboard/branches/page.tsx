@@ -21,6 +21,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { describeHours } from "@/lib/availability";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Thumbnail } from "@/components/shared/cloud-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -151,9 +152,19 @@ export default function BranchesPage() {
                 {branches.map((branch) => (
                   <TableRow key={branch._id}>
                     <TableCell>
-                      <div className="font-medium">{branch.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {describeHours(branch.hours) || "Hours not set"}
+                      <div className="flex items-center gap-3">
+                        <Thumbnail
+                          src={branch.image}
+                          alt={branch.name}
+                          fallback={Store}
+                          className="h-10 w-14"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-medium">{branch.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {describeHours(branch.hours) || "Hours not set"}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

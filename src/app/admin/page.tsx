@@ -102,11 +102,11 @@ interface PaymentRow {
 }
 
 const STATUS_STYLE: Record<SubscriptionStatus, string> = {
-  trial: "bg-sky-50 text-sky-700 border-sky-200",
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  grace: "bg-amber-50 text-amber-700 border-amber-200",
-  expired: "bg-red-50 text-red-700 border-red-200",
-  suspended: "bg-red-100 text-red-800 border-red-300",
+  trial: "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/60",
+  active: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60",
+  grace: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60",
+  expired: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/60",
+  suspended: "bg-red-100 text-red-800 dark:text-red-300 border-red-300",
 };
 
 const PLAN_NAMES: Record<SubscriptionPlan, string> = {
@@ -522,7 +522,7 @@ function PaymentsTab() {
                     <TableCell>
                       {payment.status === "review" ? (
                         <div className="flex flex-wrap items-center gap-1">
-                          <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                          <Badge variant="outline" className="border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
                             review
                           </Badge>
                           <Button

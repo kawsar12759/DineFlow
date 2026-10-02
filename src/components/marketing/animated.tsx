@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { MotionConfig, motion, type Variants } from "framer-motion";
 import type { ReactNode } from "react";
 
 const fadeUp: Variants = {
@@ -22,16 +22,19 @@ export function FadeUp({
   className?: string;
 }) {
   return (
-    <motion.div
-      className={className}
-      variants={fadeUp}
-      custom={delay}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-60px" }}
-    >
-      {children}
-    </motion.div>
+    // With "reduce motion" on, sections fade in without sliding.
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        className={className}
+        variants={fadeUp}
+        custom={delay}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+      >
+        {children}
+      </motion.div>
+    </MotionConfig>
   );
 }
 
@@ -43,15 +46,17 @@ export function Stagger({
   className?: string;
 }) {
   return (
-    <motion.div
-      className={className}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ staggerChildren: 0.08 }}
-    >
-      {children}
-    </motion.div>
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        className={className}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ staggerChildren: 0.08 }}
+      >
+        {children}
+      </motion.div>
+    </MotionConfig>
   );
 }
 

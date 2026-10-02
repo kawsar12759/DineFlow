@@ -163,8 +163,8 @@ export default function CustomersPage() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Visits</TableHead>
                   <TableHead>Total spend</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead>Since</TableHead>
+                  <TableHead className="hidden md:table-cell">Tags</TableHead>
+                  <TableHead className="hidden md:table-cell">Since</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -195,7 +195,7 @@ export default function CustomersPage() {
                     <TableCell className="font-medium">
                       {formatCurrency(customer.totalSpend)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {customer.tags.slice(0, 3).map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-[10px]">
@@ -204,13 +204,13 @@ export default function CustomersPage() {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="hidden md:table-cell text-muted-foreground">
                       {formatDate(customer.createdAt)}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" aria-label="More actions">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

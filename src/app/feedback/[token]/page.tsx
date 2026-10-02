@@ -99,7 +99,7 @@ export default function FeedbackPage({
         <CardContent className="space-y-5 p-6">
           {visit.feedback ? (
             <div className="space-y-3 text-center">
-              <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
+              <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" />
               <h2 className="text-lg font-semibold">Thank you for your feedback</h2>
               <StarRating value={visit.feedback.rating} className="justify-center" />
               {visit.feedback.comment && (

@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -197,9 +198,8 @@ export function StaffFormDialog({
           {isEditing ? (
             <div className="space-y-1.5">
               <Label htmlFor="password">New password (leave blank to keep)</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="At least 8 characters"
                 {...form.register("password")}
               />
@@ -221,9 +221,8 @@ export function StaffFormDialog({
               {!invite && (
                 <div className="space-y-1.5">
                   <Label htmlFor="password">Password</Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     placeholder="At least 8 characters"
                     {...form.register("password")}
                   />

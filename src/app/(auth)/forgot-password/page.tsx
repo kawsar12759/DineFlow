@@ -66,9 +66,11 @@ export default function ForgotPasswordPage() {
             autoComplete="email"
             placeholder="you@restaurant.com"
             {...form.register("email")}
+            aria-invalid={!!form.formState.errors.email}
+            aria-describedby={form.formState.errors.email ? "email-error" : undefined}
           />
           {form.formState.errors.email && (
-            <p className="text-xs text-destructive">
+            <p id="email-error" role="alert" className="text-xs text-destructive">
               {form.formState.errors.email.message}
             </p>
           )}

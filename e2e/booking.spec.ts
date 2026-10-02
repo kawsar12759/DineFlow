@@ -25,7 +25,7 @@ test("a guest books a table, the restaurant sees it, and the guest cancels", asy
   await signIn(staff, ACTIVE.owner.email);
   await expect(staff).toHaveURL(/\/dashboard$/);
   await staff.goto("/dashboard/reservations");
-  await expect(staff.getByText(guest.name)).toBeVisible();
+  await expect(staff.getByText(guest.name).filter({ visible: true })).toBeVisible();
   await staff.close();
 
   // The guest cancels from the link in their confirmation.

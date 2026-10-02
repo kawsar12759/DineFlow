@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowRight,
   CalendarCheck,
   CircleDollarSign,
   Gauge,
@@ -68,18 +70,37 @@ export default function DashboardOverviewPage() {
       <PageHeader
         title="Overview"
         description="What's happening across your restaurant today."
-      >
-        <Tabs value={range} onValueChange={setRange}>
-          <TabsList>
-            <TabsTrigger value="7">7d</TabsTrigger>
-            <TabsTrigger value="30">30d</TabsTrigger>
-            <TabsTrigger value="90">90d</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </PageHeader>
+      />
+
+      {/* The one thing that needs someone's attention comes first. */}
+      {overview && overview.pendingReservations > 0 && (
+        <Link
+          href="/dashboard/reservations?status=pending"
+          className="group flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-950/70"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
+            <Hourglass className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1 text-sm">
+            <span className="font-semibold">
+              {overview.pendingReservations}{" "}
+              {overview.pendingReservations === 1 ? "reservation is" : "reservations are"}{" "}
+              waiting for approval
+            </span>
+            <span className="hidden text-amber-800/80 dark:text-amber-200/80 sm:inline">
+              {" "}
+              · Guests hear back once you approve or reject.
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-1 text-sm font-medium">
+            Review
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+      )}
 
       {/* Stat widgets */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {overviewLoading || !overview ? (
           Array.from({ length: 4 }).map((_, index) => (
             <StatCardSkeleton key={index} />
@@ -117,6 +138,16 @@ export default function DashboardOverviewPage() {
       </div>
 
       {/* Charts */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <h2 className="text-lg font-semibold tracking-tight">Trends</h2>
+        <Tabs value={range} onValueChange={setRange}>
+          <TabsList aria-label="Chart period">
+            <TabsTrigger value="7">7 days</TabsTrigger>
+            <TabsTrigger value="30">30 days</TabsTrigger>
+            <TabsTrigger value="90">90 days</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -162,29 +193,6 @@ export default function DashboardOverviewPage() {
         </Card>
 
         <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Hourglass className="h-4 w-4 text-amber-500" />
-                Pending approvals
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {overviewLoading || !overview ? (
-                <Skeleton className="h-9 w-16" />
-              ) : (
-                <>
-                  <div className="text-3xl font-semibold">
-                    {overview.pendingReservations}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    reservations waiting for a decision
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">

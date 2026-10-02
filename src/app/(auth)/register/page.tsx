@@ -11,6 +11,7 @@ import { api, ApiClientError } from "@/lib/api-client";
 import { registerSchema, type RegisterInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export default function RegisterPage() {
@@ -69,18 +70,22 @@ export default function RegisterPage() {
             id="restaurantName"
             placeholder="Ember & Oak"
             {...form.register("restaurantName")}
+            aria-invalid={!!form.formState.errors.restaurantName}
+            aria-describedby={form.formState.errors.restaurantName ? "restaurantName-error" : undefined}
           />
           {form.formState.errors.restaurantName && (
-            <p className="text-xs text-destructive">
+            <p id="restaurantName-error" role="alert" className="text-xs text-destructive">
               {form.formState.errors.restaurantName.message}
             </p>
           )}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="name">Your name</Label>
-          <Input id="name" placeholder="Jane Smith" {...form.register("name")} />
+          <Input id="name" placeholder="Jane Smith" {...form.register("name")}
+            aria-invalid={!!form.formState.errors.name}
+            aria-describedby={form.formState.errors.name ? "name-error" : undefined} />
           {form.formState.errors.name && (
-            <p className="text-xs text-destructive">
+            <p id="name-error" role="alert" className="text-xs text-destructive">
               {form.formState.errors.name.message}
             </p>
           )}
@@ -93,24 +98,27 @@ export default function RegisterPage() {
             placeholder="you@restaurant.com"
             autoComplete="email"
             {...form.register("email")}
+            aria-invalid={!!form.formState.errors.email}
+            aria-describedby={form.formState.errors.email ? "email-error" : undefined}
           />
           {form.formState.errors.email && (
-            <p className="text-xs text-destructive">
+            <p id="email-error" role="alert" className="text-xs text-destructive">
               {form.formState.errors.email.message}
             </p>
           )}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="At least 8 characters"
             autoComplete="new-password"
             {...form.register("password")}
+            aria-invalid={!!form.formState.errors.password}
+            aria-describedby={form.formState.errors.password ? "password-error" : undefined}
           />
           {form.formState.errors.password && (
-            <p className="text-xs text-destructive">
+            <p id="password-error" role="alert" className="text-xs text-destructive">
               {form.formState.errors.password.message}
             </p>
           )}

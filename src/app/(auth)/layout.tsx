@@ -30,8 +30,15 @@ export default function AuthLayout({
           </footer>
         </blockquote>
       </div>
-      <div className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">{children}</div>
+      <div className="flex flex-col px-6 py-8 lg:justify-center lg:py-12">
+        {/* Phones have no brand panel, so give them a way home. */}
+        <Link href="/" className="flex items-center gap-2 self-start lg:hidden">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <UtensilsCrossed className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <span className="text-lg font-semibold">DineFlow</span>
+        </Link>
+        <div className="mx-auto my-auto w-full max-w-sm py-10 lg:py-0">{children}</div>
       </div>
     </div>
   );

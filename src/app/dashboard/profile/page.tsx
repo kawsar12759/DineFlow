@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
@@ -194,9 +195,8 @@ export default function ProfilePage() {
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="currentPassword">Current password</Label>
-              <Input
+              <PasswordInput
                 id="currentPassword"
-                type="password"
                 autoComplete="current-password"
                 {...passwordForm.register("currentPassword")}
               />
@@ -208,9 +208,8 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="newPassword">New password</Label>
-              <Input
+              <PasswordInput
                 id="newPassword"
-                type="password"
                 autoComplete="new-password"
                 placeholder="At least 8 characters"
                 {...passwordForm.register("newPassword")}

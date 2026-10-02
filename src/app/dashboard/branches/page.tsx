@@ -141,10 +141,10 @@ export default function BranchesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Branch</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead className="hidden md:table-cell">Location</TableHead>
                   <TableHead>Capacity</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead className="hidden md:table-cell">Created</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -167,7 +167,7 @@ export default function BranchesPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <span className="flex items-center gap-1.5 text-muted-foreground">
                         <MapPin className="h-3.5 w-3.5" />
                         {branch.address.city}
@@ -187,13 +187,13 @@ export default function BranchesPage() {
                         {branch.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="hidden md:table-cell text-muted-foreground">
                       {formatDate(branch.createdAt)}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" aria-label="More actions">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

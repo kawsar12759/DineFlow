@@ -410,13 +410,13 @@ export default function OrderDetailPage({
                 <dd>{formatCurrency(order.subtotal)}</dd>
               </div>
               {order.discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-600">
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                   <dt>Discount</dt>
                   <dd>−{formatCurrency(order.discountAmount)}</dd>
                 </div>
               )}
               {(order.loyaltyDiscount ?? 0) > 0 && (
-                <div className="flex justify-between text-emerald-600">
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                   <dt>Points ({order.loyaltyPointsRedeemed})</dt>
                   <dd>−{formatCurrency(order.loyaltyDiscount ?? 0)}</dd>
                 </div>

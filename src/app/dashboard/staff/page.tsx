@@ -178,10 +178,10 @@ export default function StaffPage() {
                 <TableRow>
                   <TableHead>Member</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Branch</TableHead>
-                  <TableHead>Shift</TableHead>
+                  <TableHead className="hidden md:table-cell">Branch</TableHead>
+                  <TableHead className="hidden lg:table-cell">Shift</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
+                  <TableHead className="hidden md:table-cell">Joined</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -216,10 +216,10 @@ export default function StaffPage() {
                           {member.role}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
                         {branchName ?? "Unassigned"}
                       </TableCell>
-                      <TableCell className="capitalize text-muted-foreground">
+                      <TableCell className="hidden lg:table-cell capitalize text-muted-foreground">
                         {member.shift ?? "—"}
                       </TableCell>
                       <TableCell>
@@ -227,13 +227,13 @@ export default function StaffPage() {
                           {member.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
                         {formatDate(member.createdAt)}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" aria-label="More actions">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

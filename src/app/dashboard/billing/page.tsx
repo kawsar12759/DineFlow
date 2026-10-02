@@ -69,11 +69,11 @@ interface Billing {
 }
 
 const STATUS_BADGE: Record<SubscriptionState["status"], { label: string; className: string }> = {
-  trial: { label: "Free trial", className: "bg-sky-50 text-sky-700 border-sky-200" },
-  active: { label: "Active", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  grace: { label: "Payment due", className: "bg-amber-50 text-amber-700 border-amber-200" },
-  expired: { label: "Paused", className: "bg-red-50 text-red-700 border-red-200" },
-  suspended: { label: "Suspended", className: "bg-red-50 text-red-700 border-red-200" },
+  trial: { label: "Free trial", className: "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/60" },
+  active: { label: "Active", className: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60" },
+  grace: { label: "Payment due", className: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60" },
+  expired: { label: "Paused", className: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/60" },
+  suspended: { label: "Suspended", className: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/60" },
 };
 
 const PAYMENT_MESSAGES: Record<string, { kind: "success" | "error" | "info"; text: string }> = {
@@ -323,8 +323,8 @@ function BillingContent() {
                       <Badge
                         variant="outline"
                         className={cn(
-                          payment.status === "paid" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-                          payment.status === "review" && "border-amber-200 bg-amber-50 text-amber-700"
+                          payment.status === "paid" && "border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300",
+                          payment.status === "review" && "border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
                         )}
                         title={payment.failureReason}
                       >

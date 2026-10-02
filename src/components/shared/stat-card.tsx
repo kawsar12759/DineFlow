@@ -24,20 +24,24 @@ export function StatCard({
 
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground">{title}</span>
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-xs font-medium text-muted-foreground sm:text-sm">
+            {title}
+          </span>
+          <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent sm:flex">
             <Icon className="h-4 w-4 text-accent-foreground" />
           </div>
         </div>
-        <div className="mt-3 text-3xl font-semibold tracking-tight">{value}</div>
+        <div className="mt-2 text-2xl font-semibold tabular-nums tracking-tight sm:mt-3 sm:text-3xl">
+          {value}
+        </div>
         {delta !== undefined && (
-          <div className="mt-2 flex items-center gap-1 text-xs">
+          <div className="mt-2 flex flex-wrap items-center gap-x-1 text-xs">
             <span
               className={cn(
                 "inline-flex items-center gap-0.5 font-medium",
-                isPositive ? "text-emerald-600" : "text-red-600"
+                isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
               )}
             >
               {isPositive ? (
@@ -61,10 +65,10 @@ export function StatCard({
 export function StatCardSkeleton() {
   return (
     <Card>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-9 w-9 rounded-lg" />
+          <Skeleton className="h-4 w-24 sm:w-28" />
+          <Skeleton className="hidden h-9 w-9 rounded-lg sm:block" />
         </div>
         <Skeleton className="mt-3 h-9 w-24" />
         <Skeleton className="mt-2 h-3.5 w-32" />

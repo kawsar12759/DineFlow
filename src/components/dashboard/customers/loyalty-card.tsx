@@ -146,7 +146,7 @@ export function LoyaltyCard({
                 <span
                   className={cn(
                     "shrink-0 font-medium",
-                    entry.points > 0 ? "text-emerald-600" : "text-foreground"
+                    entry.points > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
                   )}
                 >
                   {entry.points > 0 ? "+" : ""}

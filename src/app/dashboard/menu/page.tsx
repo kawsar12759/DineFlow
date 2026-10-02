@@ -189,9 +189,9 @@ export default function MenuPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Dish</TableHead>
-                  <TableHead>Category</TableHead>
+                  <TableHead className="hidden sm:table-cell">Category</TableHead>
                   <TableHead>Price</TableHead>
-                  <TableHead>Branch</TableHead>
+                  <TableHead className="hidden md:table-cell">Branch</TableHead>
                   <TableHead>Available</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
@@ -225,13 +225,13 @@ export default function MenuPage() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <Badge variant="secondary">{item.category}</Badge>
                       </TableCell>
                       <TableCell className="font-medium">
                         {formatCurrency(item.price)}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
                         {branchName ?? "All branches"}
                       </TableCell>
                       <TableCell>
@@ -248,7 +248,7 @@ export default function MenuPage() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" aria-label="More actions">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

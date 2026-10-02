@@ -6,7 +6,9 @@ test("the reservations list shows seeded bookings", async ({ page }) => {
   await signIn(page, ACTIVE.owner.email);
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.goto("/dashboard/reservations");
-  await expect(page.getByText(ACTIVE.seededGuest.name)).toBeVisible();
+  await expect(
+    page.getByText(ACTIVE.seededGuest.name).filter({ visible: true })
+  ).toBeVisible();
 });
 
 test("tenants only see their own data", async ({ page }) => {

@@ -142,31 +142,31 @@ export const RESERVATION_STATUS_META: Record<
 > = {
   pending: {
     label: "Pending",
-    className: "bg-amber-50 text-amber-700 border-amber-200",
+    className: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60",
   },
   approved: {
     label: "Approved",
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    className: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60",
   },
   rejected: {
     label: "Rejected",
-    className: "bg-red-50 text-red-700 border-red-200",
+    className: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/60",
   },
   seated: {
     label: "Seated",
-    className: "bg-sky-50 text-sky-700 border-sky-200",
+    className: "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/60",
   },
   completed: {
     label: "Completed",
-    className: "bg-slate-100 text-slate-700 border-slate-200",
+    className: "bg-slate-100 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800/60",
   },
   cancelled: {
     label: "Cancelled",
-    className: "bg-slate-50 text-slate-500 border-slate-200",
+    className: "bg-slate-50 dark:bg-slate-950/40 text-slate-500 border-slate-200 dark:border-slate-800/60",
   },
   no_show: {
     label: "No-show",
-    className: "bg-orange-50 text-orange-700 border-orange-200",
+    className: "bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/60",
   },
 };
 

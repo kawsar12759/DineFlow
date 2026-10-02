@@ -10,7 +10,15 @@ import { toast } from "sonner";
 import { loginSchema, type LoginInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+
+const DEMO_PASSWORD = "password123";
+const DEMO_ACCOUNTS = [
+  { role: "Owner", email: "owner@ember-oak.com" },
+  { role: "Manager", email: "manager@ember-oak.com" },
+  { role: "Staff", email: "staff@ember-oak.com" },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,7 +70,7 @@ export default function LoginPage() {
       {inactiveNotice && (
         <p
           role="alert"
-          className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+          className="mt-6 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-800 dark:text-amber-300"
         >
           Your account has been deactivated or changed. Ask your restaurant
           owner or manager to restore access.
@@ -78,9 +86,11 @@ export default function LoginPage() {
             placeholder="you@restaurant.com"
             autoComplete="email"
             {...form.register("email")}
+            aria-invalid={!!form.formState.errors.email}
+            aria-describedby={form.formState.errors.email ? "email-error" : undefined}
           />
           {form.formState.errors.email && (
-            <p className="text-xs text-destructive">
+            <p id="email-error" role="alert" className="text-xs text-destructive">
               {form.formState.errors.email.message}
             </p>
           )}
@@ -95,15 +105,16 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="••••••••"
             autoComplete="current-password"
             {...form.register("password")}
+            aria-invalid={!!form.formState.errors.password}
+            aria-describedby={form.formState.errors.password ? "password-error" : undefined}
           />
           {form.formState.errors.password && (
-            <p className="text-xs text-destructive">
+            <p id="password-error" role="alert" className="text-xs text-destructive">
               {form.formState.errors.password.message}
             </p>
           )}
@@ -120,11 +131,27 @@ export default function LoginPage() {
         </Link>
       </p>
 
-      <div className="mt-8 rounded-lg border bg-muted/40 p-4 text-xs text-muted-foreground">
-        <p className="font-medium text-foreground">Demo credentials</p>
-        <p className="mt-1">Owner: owner@ember-oak.com / password123</p>
-        <p>Manager: manager@ember-oak.com / password123</p>
-        <p>Staff: staff@ember-oak.com / password123</p>
+      <div className="mt-8 rounded-lg border bg-muted/40 p-4">
+        <p className="text-xs font-medium">Try the demo</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Pick a role to fill in the form, then sign in.
+        </p>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {DEMO_ACCOUNTS.map((account) => (
+            <Button
+              key={account.email}
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                form.setValue("email", account.email, { shouldValidate: true });
+                form.setValue("password", DEMO_PASSWORD, { shouldValidate: true });
+              }}
+            >
+              {account.role}
+            </Button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -50,6 +50,9 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       <Sidebar role={role} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
@@ -58,7 +61,11 @@ export default async function DashboardLayout({
           role={role}
           restaurantName={restaurantName}
         />
-        <main className="flex-1 space-y-6 p-4 pb-24 sm:p-6 lg:pb-6">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[1600px] flex-1 space-y-6 p-4 pb-24 outline-none sm:p-6 lg:pb-6"
+        >
           {subscription && (
             <SubscriptionBanner state={subscription} isOwner={role === "owner"} />
           )}

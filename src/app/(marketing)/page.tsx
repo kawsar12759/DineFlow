@@ -64,20 +64,20 @@ const testimonials = [
   {
     quote:
       "DineFlow replaced four separate tools the day we switched. Reservations, menus, staff — one login, every branch.",
-    name: "Amelia Rhodes",
-    role: "Owner, Ember & Oak (6 locations)",
+    name: "Farhana Rahman",
+    role: "Owner, Ember & Oak (Dhaka & Chattogram)",
   },
   {
     quote:
       "The occupancy analytics alone paid for the subscription. We re-staffed our slow nights and margins jumped 11%.",
-    name: "Marcus Chen",
-    role: "Operations Director, Bao House Group",
+    name: "Tanvir Hasan",
+    role: "Operations Director, Kacchi Ghor Group",
   },
   {
     quote:
       "Our hosts approve bookings from the floor in two taps. Guests get instant confirmations. It just works.",
-    name: "Sofia Martínez",
-    role: "GM, La Talavera",
+    name: "Nusrat Jahan",
+    role: "GM, Sakura Table, Gulshan",
   },
 ];
 
@@ -91,19 +91,22 @@ export default function HomePage() {
           aria-hidden
         />
         <div className="container flex flex-col items-center py-24 text-center md:py-32">
-          <FadeUp delay={0.08}>
+          <div className="animate-fade-up" style={{ animationDelay: "0.08s" }}>
             <h1 className="mt-6 max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
               Run every table, branch, and shift from one platform
             </h1>
-          </FadeUp>
-          <FadeUp delay={0.16}>
+          </div>
+          <div className="animate-fade-up" style={{ animationDelay: "0.16s" }}>
             <p className="mt-6 max-w-2xl text-balance text-lg text-muted-foreground">
               DineFlow unifies reservations, menus, customers, staff, and
               analytics for multi-location restaurants — so you can focus on
               the food, not the spreadsheets.
             </p>
-          </FadeUp>
-          <FadeUp delay={0.24} className="mt-8 flex flex-col gap-3 sm:flex-row">
+          </div>
+          <div
+            className="animate-fade-up mt-8 flex flex-col gap-3 sm:flex-row"
+            style={{ animationDelay: "0.24s" }}
+          >
             <Button size="xl" asChild>
               <Link href="/register">
                 Start free trial
@@ -113,10 +116,13 @@ export default function HomePage() {
             <Button size="xl" variant="outline" asChild>
               <Link href="/reserve">Book a table</Link>
             </Button>
-          </FadeUp>
+          </div>
 
           {/* Dashboard preview mock */}
-          <FadeUp delay={0.34} className="mt-16 w-full max-w-4xl">
+          <div
+            className="animate-fade-up mt-16 w-full max-w-4xl"
+            style={{ animationDelay: "0.34s" }}
+          >
             <div className="rounded-xl border bg-card p-2 shadow-2xl shadow-primary/5">
               <div className="rounded-lg border bg-muted/30">
                 <div className="flex items-center gap-1.5 border-b px-4 py-3">
@@ -159,7 +165,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-          </FadeUp>
+          </div>
         </div>
       </section>
 

@@ -78,8 +78,8 @@ export default function ContactPage() {
           <CardContent className="p-6">
             {sent ? (
               <div className="flex flex-col items-center py-12 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-                  <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
+                  <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h2 className="mt-5 text-xl font-semibold">Message sent!</h2>
                 <p className="mt-2 max-w-sm text-sm text-muted-foreground">

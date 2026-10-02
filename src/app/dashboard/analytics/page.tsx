@@ -346,7 +346,7 @@ export default function AnalyticsPage() {
                           <TableCell>{formatCurrency(item.price)}</TableCell>
                           <TableCell>
                             <span className="flex items-center gap-1">
-                              <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                              <TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                               {item.views}
                             </span>
                           </TableCell>

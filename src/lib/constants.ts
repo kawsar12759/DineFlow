@@ -293,3 +293,13 @@ export const BD_DIVISIONS = [
   "Sylhet",
 ] as const;
 export const PAGE_SIZE = 10;
+
+/** How each payment method is written for people (bKash is a brand name). */
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: "Cash",
+  card: "Card",
+  bkash: "bKash",
+  nagad: "Nagad",
+  rocket: "Rocket",
+  other: "Other",
+};

@@ -139,7 +139,7 @@ export default function TablesPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, index) => (
             <Skeleton key={index} className="h-28 w-full" />
           ))}
@@ -163,7 +163,7 @@ export default function TablesPage() {
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {zone}
               </h2>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 {tables
                   .filter((table) => (table.zone ?? "Unzoned") === zone)
                   .map((table) => (

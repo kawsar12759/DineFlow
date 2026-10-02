@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { ChefHat, Clock, Search } from "lucide-react";
+import { ArrowRight, ChefHat, Clock, Search } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useDebounce } from "@/hooks/use-debounce";
 import { MENU_CATEGORIES } from "@/lib/constants";
@@ -25,6 +26,7 @@ interface PublicMenuItem {
   allergens: string[];
   preparationTime?: number;
   image?: string;
+  restaurant: { _id: string; name: string; slug: string } | null;
 }
 
 export default function PublicMenuPage() {
@@ -134,6 +136,11 @@ export default function PublicMenuPage() {
                         {formatCurrency(item.price)}
                       </span>
                     </div>
+                    {item.restaurant && (
+                      <p className="-mt-0.5 text-sm text-muted-foreground">
+                        at {item.restaurant.name}
+                      </p>
+                    )}
                     <Badge variant="secondary" className="mt-2 w-fit">
                       {item.category}
                     </Badge>
@@ -159,6 +166,15 @@ export default function PublicMenuPage() {
                         </Badge>
                       ))}
                     </div>
+                    {item.restaurant && (
+                      <Link
+                        href={`/r/${item.restaurant.slug}#book`}
+                        className="mt-4 inline-flex items-center gap-1 self-start text-sm font-medium text-primary hover:underline"
+                      >
+                        Book at {item.restaurant.name}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    )}
                   </CardContent>
                 </Card>
               ))}

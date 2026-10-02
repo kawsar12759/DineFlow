@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AlertTriangle, Users } from "lucide-react";
-import { cn, formatTime } from "@/lib/utils";
+import { cn, formatTime, formatGuests } from "@/lib/utils";
 import { RESERVATION_STATUS_META, type ReservationStatus } from "@/lib/constants";
 import { timeToMinutes } from "@/lib/dates";
 
@@ -191,7 +191,7 @@ export function FloorTimeline({
                             STATUS_BLOCK[reservation.status],
                             dragging === reservation._id && "opacity-50"
                           )}
-                          title={`${reservation.customer.name} · ${reservation.guests} guests · ${RESERVATION_STATUS_META[reservation.status].label}`}
+                          title={`${reservation.customer.name} · ${formatGuests(reservation.guests)} · ${RESERVATION_STATUS_META[reservation.status].label}`}
                         >
                           <span className="truncate font-medium">
                             {reservation.customer.name}

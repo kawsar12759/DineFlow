@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { api } from "@/lib/api-client";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatGuests } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard, StatCardSkeleton } from "@/components/shared/stat-card";
 import {
@@ -125,7 +125,7 @@ export default function DashboardOverviewPage() {
               title="Occupancy today"
               value={`${overview.occupancyRate}%`}
               icon={Gauge}
-              hint={`${overview.guestsToday} guests / ${overview.totalCapacity} seats`}
+              hint={`${formatGuests(overview.guestsToday)} / ${overview.totalCapacity} seats`}
             />
             <StatCard
               title="Active customers"

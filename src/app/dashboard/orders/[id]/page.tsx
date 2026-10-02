@@ -27,8 +27,12 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PayDialog } from "@/components/dashboard/orders/pay-dialog";
 import { GuestLoyalty } from "@/components/dashboard/orders/guest-loyalty";
 import { useDebounce } from "@/hooks/use-debounce";
-import { formatCurrency } from "@/lib/utils";
-import { MENU_CATEGORIES, type LoyaltySettings } from "@/lib/constants";
+import { formatCurrency, formatGuests } from "@/lib/utils";
+import {
+  MENU_CATEGORIES,
+  PAYMENT_METHOD_LABELS,
+  type LoyaltySettings,
+} from "@/lib/constants";
 
 interface OrderItem {
   _id: string;
@@ -225,7 +229,7 @@ export default function OrderDetailPage({
         description={[
           order.tableIds.map((table) => table.name).join(", ") || "No table",
           order.customerId?.name,
-          order.guests ? `${order.guests} guests` : null,
+          order.guests ? formatGuests(order.guests) : null,
           order.branchId?.name,
         ]
           .filter(Boolean)
@@ -243,7 +247,7 @@ export default function OrderDetailPage({
         <p className="rounded-lg border bg-muted px-4 py-3 text-sm">
           This order is {order.status}
           {order.payment
-            ? ` — ${formatCurrency(order.payment.amount)} by ${order.payment.method}${
+            ? ` — ${formatCurrency(order.payment.amount)} by ${PAYMENT_METHOD_LABELS[order.payment.method] ?? order.payment.method}${
                 order.payment.changeGiven
                   ? `, ${formatCurrency(order.payment.changeGiven)} change given`
                   : ""
@@ -504,7 +508,7 @@ export default function OrderDetailPage({
 
             {order.status === "paid" && order.payment && (
               <Badge variant="secondary" className="w-full justify-center py-2">
-                Paid {formatCurrency(order.payment.amount)} by {order.payment.method}
+                Paid {formatCurrency(order.payment.amount)} by {PAYMENT_METHOD_LABELS[order.payment.method] ?? order.payment.method}
               </Badge>
             )}
           </CardContent>

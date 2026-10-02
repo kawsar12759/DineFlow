@@ -244,7 +244,8 @@ export function BookingWidget({
           </p>
         ) : (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {availability.slots.map((slot) => (
+            {/* Times that have passed are just noise; full ones still say "taken". */}
+            {availability.slots.filter((slot) => slot.reason !== "past").map((slot) => (
               <button
                 key={slot.time}
                 type="button"

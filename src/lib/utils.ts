@@ -92,3 +92,8 @@ export function percentChange(current: number, previous: number) {
   if (previous === 0) return current > 0 ? 100 : 0;
   return ((current - previous) / previous) * 100;
 }
+
+/** "1 guest", "4 guests". */
+export function formatGuests(count: number) {
+  return `${count} ${count === 1 ? "guest" : "guests"}`;
+}

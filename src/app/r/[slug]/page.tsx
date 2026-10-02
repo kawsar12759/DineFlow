@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Clock, Gift, Globe, Mail, MapPin, Phone, Star, Users, UtensilsCrossed } from "lucide-react";
+import {
+  CalendarCheck,
+  Clock,
+  Gift,
+  Globe,
+  Mail,
+  MapPin,
+  Phone,
+  Star,
+  Users,
+  UtensilsCrossed,
+} from "lucide-react";
 import { connectDB } from "@/lib/db";
 import { Branch, Feedback, MenuItem, Restaurant } from "@/models";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +22,7 @@ import {
   BookingWidget,
   type BookingBranch,
 } from "@/components/public/booking-widget";
+import { MobileBookBar } from "@/components/public/mobile-book-bar";
 import { bookingSettings, describeHours } from "@/lib/availability";
 import { MENU_CATEGORIES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -90,6 +102,7 @@ export default async function RestaurantStorefront({ params }: PageProps) {
     city: branch.address.city,
     hours: describeHours(branch.hours),
   }));
+  const canBook = bookingBranches.length > 0 && acceptingBookings;
 
   const menuByCategory = MENU_CATEGORIES.map((category) => ({
     category,
@@ -170,6 +183,15 @@ export default async function RestaurantStorefront({ params }: PageProps) {
               </a>
             )}
           </div>
+          {canBook && (
+            <a
+              href="#book"
+              className="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <CalendarCheck className="h-4 w-4" />
+              Book a table
+            </a>
+          )}
         </div>
       </header>
 
@@ -351,8 +373,8 @@ export default async function RestaurantStorefront({ params }: PageProps) {
         </div>
 
         {/* Booking */}
-        <aside className="lg:sticky lg:top-8 lg:self-start">
-          {bookingBranches.length > 0 && acceptingBookings ? (
+        <aside id="book" className="scroll-mt-4 lg:sticky lg:top-8 lg:self-start">
+          {canBook ? (
             <BookingWidget
               restaurantId={restaurant._id.toString()}
               branches={bookingBranches}
@@ -383,7 +405,9 @@ export default async function RestaurantStorefront({ params }: PageProps) {
         </aside>
       </div>
 
-      <footer className="border-t py-8">
+      {canBook && <MobileBookBar targetId="book" />}
+
+      <footer className="border-t py-8 pb-24 lg:pb-8">
         <div className="container flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
           <span>
             © {new Date().getFullYear()} {restaurant.name}

@@ -5,13 +5,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, ReceiptText, Users } from "lucide-react";
+import { ChevronDown, Plus, ReceiptText, Users } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -21,8 +29,9 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatGuests } from "@/lib/utils";
 import { todayKey } from "@/lib/dates";
+import { PAYMENT_METHOD_LABELS } from "@/lib/constants";
 
 interface OrderSummary {
   _id: string;
@@ -80,6 +89,9 @@ export default function OrdersPage() {
   });
 
   const targetBranch = branchId !== "all" ? branchId : branches[0]?._id;
+  // With several branches and none chosen, ask where the order is for
+  // instead of quietly opening it in the first one.
+  const mustPickBranch = branchId === "all" && branches.length > 1;
 
   return (
     <>
@@ -87,14 +99,35 @@ export default function OrdersPage() {
         title="Orders"
         description="Open tickets and today's closed bills."
       >
-        <Button
-          disabled={!targetBranch || open.isPending}
-          loading={open.isPending}
-          onClick={() => targetBranch && open.mutate(targetBranch)}
-        >
-          <Plus className="h-4 w-4" />
-          New order
-        </Button>
+        {mustPickBranch ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button loading={open.isPending}>
+                {!open.isPending && <Plus className="h-4 w-4" />}
+                New order
+                <ChevronDown className="h-4 w-4 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Which branch?</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {branches.map((branch) => (
+                <DropdownMenuItem key={branch._id} onClick={() => open.mutate(branch._id)}>
+                  {branch.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button
+            disabled={!targetBranch || open.isPending}
+            loading={open.isPending}
+            onClick={() => targetBranch && open.mutate(targetBranch)}
+          >
+            {!open.isPending && <Plus className="h-4 w-4" />}
+            New order
+          </Button>
+        )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -150,7 +183,11 @@ export default function OrdersPage() {
             );
 
             return (
-              <Link key={order._id} href={`/dashboard/orders/${order._id}`}>
+              <Link
+                key={order._id}
+                href={`/dashboard/orders/${order._id}`}
+                className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <Card className="h-full transition-shadow hover:shadow-md">
                   <CardContent className="space-y-3 p-4">
                     <div className="flex items-start justify-between gap-2">
@@ -166,9 +203,10 @@ export default function OrdersPage() {
                       </div>
                       <Badge
                         variant={order.status === "open" ? "default" : "secondary"}
+                        className="capitalize"
                       >
                         {order.status === "paid"
-                          ? order.payment?.method ?? "paid"
+                          ? PAYMENT_METHOD_LABELS[order.payment?.method ?? ""] ?? "Paid"
                           : order.status}
                       </Badge>
                     </div>
@@ -177,7 +215,7 @@ export default function OrdersPage() {
                       <span className="flex items-center gap-2 text-muted-foreground">
                         <Users className="h-3.5 w-3.5" />
                         {order.customerId?.name ??
-                          (order.guests ? `${order.guests} guests` : "Walk-in")}
+                          (order.guests ? formatGuests(order.guests) : "Walk-in")}
                       </span>
                       <span className="font-medium">
                         {formatCurrency(order.total || order.subtotal)}

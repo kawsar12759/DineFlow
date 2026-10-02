@@ -66,6 +66,7 @@ cp .env.example .env.local
 # set MONGODB_URI (local MongoDB or Atlas) and AUTH_SECRET
 
 # 3. Seed demo data (2 tenants, 90 days of history)
+#    WARNING: deletes every collection in MONGODB_URI's database first
 npm run seed
 
 # 4. Run
@@ -89,6 +90,8 @@ GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and Vitest in o
 
 ### Demo accounts (password: `password123`)
 
+Everyone signs in at `/login`; the role decides where you land. These accounts come from `npm run seed` and their password is public, so if you seed a deployed database, change the passwords straight away. Restaurant accounts can do it at `/dashboard/profile`. The admin can't: `/dashboard` redirects super admins to `/admin`, and a reset link would be emailed to `admin@dineflow.app`, which nobody receives. Set its bcrypt hash directly in the database instead.
+
 | Email | Role |
 | --- | --- |
 | `owner@ember-oak.com` | Owner — full access |
@@ -97,7 +100,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck and Vitest in o
 
 Guest portal: open `/account` and enter `guest@example.com`. Without `RESEND_API_KEY` the sign-in link is printed in the dev server log.
 
-DineFlow admin: `admin@dineflow.app` (same password) opens `/admin`. Ember & Oak is a paying Growth customer; Sakura Table (`owner@sakura-table.com`) is on a trial that ends in 5 days.
+DineFlow admin: `admin@dineflow.app` (same password) is sent to `/admin` after signing in. Ember & Oak is a paying Growth customer; Sakura Table (`owner@sakura-table.com`) is on a trial that ends in 5 days.
 
 ### Subscription payments
 

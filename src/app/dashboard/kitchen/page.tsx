@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, formatGuests } from "@/lib/utils";
 
 interface TicketItem {
   _id: string;
@@ -164,7 +164,7 @@ export default function KitchenPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {ticket.tables.join(", ") || "No table"}
-                        {ticket.guests ? ` · ${ticket.guests} guests` : ""}
+                        {ticket.guests ? ` · ${formatGuests(ticket.guests)}` : ""}
                       </p>
                     </div>
                     <Badge

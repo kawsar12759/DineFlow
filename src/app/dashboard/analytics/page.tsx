@@ -97,10 +97,10 @@ export default function AnalyticsPage() {
         description="Deep-dive into revenue, reservations, branches, and menu performance."
       >
         <Tabs value={range} onValueChange={setRange}>
-          <TabsList>
-            <TabsTrigger value="7">7d</TabsTrigger>
-            <TabsTrigger value="30">30d</TabsTrigger>
-            <TabsTrigger value="90">90d</TabsTrigger>
+          <TabsList aria-label="Period">
+            <TabsTrigger value="7">7 days</TabsTrigger>
+            <TabsTrigger value="30">30 days</TabsTrigger>
+            <TabsTrigger value="90">90 days</TabsTrigger>
           </TabsList>
         </Tabs>
       </PageHeader>
@@ -144,13 +144,16 @@ export default function AnalyticsPage() {
       </div>
 
       <Tabs defaultValue="revenue">
-        <TabsList>
-          <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="reservations">Reservations</TabsTrigger>
-          <TabsTrigger value="customers">Customers</TabsTrigger>
-          <TabsTrigger value="branches">Branches</TabsTrigger>
-          <TabsTrigger value="menu">Menu</TabsTrigger>
-        </TabsList>
+        {/* Scrolls on its own on phones instead of widening the page. */}
+        <div className="-mx-4 overflow-x-auto px-4 scrollbar-thin sm:mx-0 sm:px-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="revenue">Revenue</TabsTrigger>
+            <TabsTrigger value="reservations">Reservations</TabsTrigger>
+            <TabsTrigger value="customers">Customers</TabsTrigger>
+            <TabsTrigger value="branches">Branches</TabsTrigger>
+            <TabsTrigger value="menu">Menu</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="revenue" className="mt-4">
           <Card>

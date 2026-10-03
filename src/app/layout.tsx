@@ -8,19 +8,35 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
+const description =
+  "The all-in-one platform for restaurants to manage branches, menus, reservations, customers, and staff — with real-time analytics.";
+
 export const metadata: Metadata = {
+  // Link previews (LinkedIn, WhatsApp, Slack) need absolute image URLs.
+  metadataBase: new URL(process.env.APP_URL ?? "https://dineflow-bd.vercel.app"),
   title: {
     default: "DineFlow — Restaurant Operations Platform",
     template: "%s | DineFlow",
   },
-  description:
-    "The all-in-one platform for restaurants to manage branches, menus, reservations, customers, and staff — with real-time analytics.",
+  description,
   keywords: [
     "restaurant management",
     "reservations",
     "SaaS",
     "restaurant analytics",
   ],
+  openGraph: {
+    type: "website",
+    siteName: "DineFlow",
+    title: "DineFlow — Restaurant Operations Platform",
+    description,
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DineFlow — Restaurant Operations Platform",
+    description,
+  },
 };
 
 export default function RootLayout({
